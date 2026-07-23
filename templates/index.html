@@ -1,0 +1,2394 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WA Humas CDM</title>
+    <link rel="icon" type="image/png" href="/static/Profile-Pic.png">
+    <link rel="shortcut icon" type="image/x-icon" href="/favicon.ico">
+    <link rel="apple-touch-icon" href="/static/Profile-Pic.png">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            500: '#25D366',
+                            600: '#128C7E',
+                        },
+                        dark: {
+                            900: '#111b21', // App bg
+                            800: '#202c33', // Panel bg
+                            700: '#2a3942', // Border / Hover
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            overflow: hidden;
+        }
+
+        .scroll-hidden::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        .scroll-hidden::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        .chat-bg {
+            background-image: url('https://i.pinimg.com/736x/8c/98/99/8c98994518b575bfd8c949e91d20548b.jpg');
+            background-blend-mode: overlay;
+            background-color: rgba(11, 20, 26, 0.95);
+        }
+    </style>
+</head>
+
+<body class="bg-dark-900 text-gray-200 h-screen flex flex-col">
+
+    <!-- Top Navigation for Status, All Contacts Directory, Template Selector, Label Manager, and Blast -->
+    <header class="bg-dark-800 border-b border-dark-700 p-3 flex justify-between items-center z-10 shrink-0">
+        <div class="flex items-center gap-3">
+            <img src="/static/Profile-Pic.png" alt="CDM Logo"
+                class="w-8 h-8 rounded-full object-cover border border-brand-500/40 shadow-sm">
+            <h1 class="text-xl font-bold text-white">WA Humas CDM</h1>
+        </div>
+
+        <div class="flex items-center gap-3">
+            <span id="socket-status" class="w-3 h-3 rounded-full bg-red-500 animate-pulse"
+                title="WebSocket Status"></span>
+
+            <!-- Navigation Actions: All Contacts Directory, Template Manager, Label Manager -->
+            <div class="flex items-center gap-1.5">
+                <button id="open-all-contacts-modal-btn"
+                    class="bg-dark-700 hover:bg-dark-600 text-sky-400 hover:text-sky-300 px-3 py-1.5 rounded-lg transition-colors text-xs font-semibold flex items-center gap-1.5 border border-dark-600"
+                    title="Lihat Daftar Semua Kontak Sistem">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z">
+                        </path>
+                    </svg>
+                    <span>Semua Kontak (<span id="top-nav-contacts-count">0</span>)</span>
+                </button>
+                <button id="open-manage-templates-btn"
+                    class="bg-dark-700 hover:bg-dark-600 text-gray-200 hover:text-white px-2.5 py-1.5 rounded-lg transition-colors text-xs font-medium flex items-center gap-1.5 border border-dark-600"
+                    title="Kelola Template Meta">
+                    <svg class="w-4 h-4 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
+                        </path>
+                    </svg>
+                    <span>Template</span>
+                </button>
+                <button id="open-manage-labels-btn"
+                    class="bg-dark-700 hover:bg-dark-600 text-gray-200 hover:text-white px-2.5 py-1.5 rounded-lg transition-colors text-xs font-medium flex items-center gap-1.5 border border-dark-600"
+                    title="Kelola Label Global & Warna">
+                    <svg class="w-4 h-4 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z">
+                        </path>
+                    </svg>
+                    <span>Kelola Label</span>
+                </button>
+            </div>
+
+            <button id="blast-btn"
+                class="bg-brand-500 hover:bg-brand-600 text-dark-900 font-bold py-1.5 px-4 rounded-lg text-sm transition-all flex items-center gap-2 shadow">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                        d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z">
+                    </path>
+                </svg>
+                Trigger Blast (Hari Ini: <span id="limit-text">0</span> chat)
+            </button>
+        </div>
+    </header>
+
+    <div class="flex flex-grow overflow-hidden">
+
+        <!-- Left Sidebar: Contacts -->
+        <aside class="w-1/3 min-w-[320px] max-w-[420px] border-r border-dark-700 bg-dark-900 flex flex-col">
+            <div class="p-3 border-b border-dark-700 bg-dark-800 flex gap-2 items-center">
+                <div class="relative flex-grow">
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                        </svg>
+                    </div>
+                    <input id="search-input" type="text"
+                        class="w-full bg-dark-900 border border-dark-700 text-white rounded-lg pl-10 pr-3 py-2 text-sm focus:outline-none focus:border-brand-500"
+                        placeholder="Cari nama, nomor, atau label...">
+                </div>
+                <!-- Action Buttons: Manual Add 1-by-1, CSV Upload, New Chat -->
+                <button id="open-add-contact-modal"
+                    class="bg-dark-700 hover:bg-dark-600 text-brand-500 p-2 rounded-lg transition-colors border border-dark-600 shrink-0"
+                    title="Tambah Kontak Manual 1-by-1">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z">
+                        </path>
+                    </svg>
+                </button>
+                <button id="open-csv-modal"
+                    class="bg-dark-700 hover:bg-dark-600 text-sky-400 p-2 rounded-lg transition-colors border border-dark-600 shrink-0"
+                    title="Upload CSV Kontak (VPS Prep)">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
+                        </path>
+                    </svg>
+                </button>
+                <button id="new-chat-btn"
+                    class="bg-dark-700 hover:bg-dark-600 text-gray-300 p-2 rounded-lg transition-colors border border-dark-600 shrink-0"
+                    title="Chat Baru / Nomor Baru">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+
+            <div id="contacts-list" class="flex-grow overflow-y-auto scroll-hidden">
+                <!-- Contacts injected here -->
+            </div>
+        </aside>
+
+
+        <!-- Right Main: Chat Area -->
+        <main class="flex-grow flex flex-col bg-dark-900 relative">
+
+            <!-- Real-Time Analytics Bar (Global & Always Visible at Top) -->
+            <div id="analytics-bar"
+                class="bg-dark-800/95 border-b border-dark-700 px-4 py-2.5 flex items-center justify-around text-xs shrink-0 backdrop-blur-sm z-20 shadow-sm">
+                <div class="flex items-center gap-1.5" title="Sent Outbound Messages">
+                    <span class="w-2.5 h-2.5 rounded-full bg-gray-400"></span>
+                    <span class="text-gray-400">Sent:</span>
+                    <span id="stat-sent" class="font-bold text-white text-sm">0</span>
+                </div>
+                <div class="flex items-center gap-1.5" title="Delivered Messages">
+                    <span class="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
+                    <span class="text-gray-400">Delivered:</span>
+                    <span id="stat-delivered" class="font-bold text-emerald-400 text-sm">0</span>
+                </div>
+                <div class="flex items-center gap-1.5" title="Read Messages">
+                    <span class="w-2.5 h-2.5 rounded-full bg-sky-400"></span>
+                    <span class="text-gray-400">Read:</span>
+                    <span id="stat-read" class="font-bold text-sky-400 text-sm">0</span>
+                </div>
+                <div class="flex items-center gap-1.5" title="Failed Messages">
+                    <span class="w-2.5 h-2.5 rounded-full bg-red-400"></span>
+                    <span class="text-gray-400">Failed:</span>
+                    <span id="stat-failed" class="font-bold text-red-400 text-sm">0</span>
+                </div>
+            </div>
+
+            <!-- Content Area under Analytics Bar -->
+            <div class="relative flex-grow flex flex-col overflow-hidden">
+
+                <!-- Default Empty State -->
+                <div id="chat-empty"
+                    class="absolute inset-0 flex flex-col items-center justify-center bg-dark-900 z-10 p-6 text-center">
+                    <img src="/static/Profile-Pic.png" alt="CDM Logo"
+                        class="w-20 h-20 mb-4 rounded-full object-cover border-2 border-brand-500/50 shadow-2xl animate-pulse">
+                    <h2 class="text-2xl text-white font-bold tracking-wide">WA Humas CDM</h2>
+                    <p class="text-gray-500 mt-2 text-sm">Pilih kontak untuk mulai percakapan atau tekan <kbd
+                            class="px-2 py-0.5 bg-dark-800 border border-dark-700 text-gray-300 rounded text-xs">Esc</kbd>
+                        untuk keluar.</p>
+                </div>
+
+                <!-- Active Chat Header -->
+                <div id="chat-header"
+                    class="hidden bg-dark-800 border-b border-dark-700 p-3 flex items-center justify-between gap-4 shrink-0 z-10">
+                    <div class="flex items-center gap-4 min-w-0">
+                        <div
+                            class="w-10 h-10 rounded-full bg-dark-700 flex-shrink-0 flex items-center justify-center text-gray-400">
+                            <svg class="w-6 h-6" fill="currentColor" viewBox="0 0 20 20">
+                                <path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z"
+                                    clip-rule="evenodd"></path>
+                            </svg>
+                        </div>
+                        <div class="min-w-0">
+                            <div class="flex items-center gap-2 flex-wrap">
+                                <h2 id="active-chat-name" class="font-medium text-white truncate">--</h2>
+                                <!-- Container for Stacked Label Badges -->
+                                <div id="active-chat-label-badges" class="flex flex-wrap items-center gap-1"></div>
+                            </div>
+                            <p id="active-chat-phone" class="text-xs text-gray-400">--</p>
+                        </div>
+                    </div>
+
+                    <!-- Label Manager, Delete Contact & Close Chat -->
+                    <div class="flex items-center gap-3 shrink-0">
+                        <div class="flex items-center gap-1.5">
+                            <span class="text-xs text-gray-400 hidden sm:inline">+ Label:</span>
+                            <select id="label-select"
+                                class="bg-dark-900 border border-dark-700 text-xs text-gray-200 rounded-lg px-2 py-1.5 focus:outline-none focus:border-brand-500 cursor-pointer">
+                                <!-- Populated dynamically by JS -->
+                            </select>
+                        </div>
+                        <button id="delete-contact-btn"
+                            class="text-gray-400 hover:text-red-400 p-1.5 rounded-lg transition-colors border border-dark-700 bg-dark-900/50"
+                            title="Hapus Kontak Ini dari Database">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16">
+                                </path>
+                            </svg>
+                        </button>
+                        <button id="close-chat-btn"
+                            class="text-gray-400 hover:text-white p-1.5 rounded-lg transition-colors"
+                            title="Tutup Chat (Esc)">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Chat Messages -->
+                <div id="chat-messages"
+                    class="hidden flex-grow overflow-y-auto p-6 scroll-hidden chat-bg flex-col gap-4">
+                    <!-- Messages injected here -->
+                </div>
+
+                <!-- Chat Input Footer with Textarea & Shift+Enter support -->
+                <div id="chat-footer"
+                    class="hidden bg-dark-800 border-t border-dark-700 p-3 shrink-0 flex items-center gap-3">
+                    <input type="file" id="media-file-input" class="hidden"
+                        accept="image/*,application/pdf,.doc,.docx,.png,.jpg,.jpeg,.webp">
+                    <button id="attach-btn"
+                        class="text-gray-400 hover:text-brand-500 p-2 rounded-xl transition-colors shrink-0"
+                        title="Attach Media">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13">
+                            </path>
+                        </svg>
+                    </button>
+                    <textarea id="chat-input" rows="1"
+                        class="flex-grow bg-dark-700 border-none text-white rounded-xl px-4 py-3 focus:outline-none focus:ring-1 focus:ring-brand-500 resize-none max-h-32 scroll-hidden text-sm"
+                        placeholder="Type a message... (Shift + Enter for newline)"></textarea>
+                    <button id="chat-send-btn"
+                        class="bg-brand-500 hover:bg-brand-600 text-dark-900 p-3 rounded-xl transition-all shrink-0">
+                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                        </svg>
+                    </button>
+                </div>
+
+            </div>
+
+        </main>
+    </div>
+
+    <!-- NEW UI MODAL: ALL CONTACTS DIRECTORY (Daftar Semua Kontak Sistem) -->
+    <div id="all-contacts-modal"
+        class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+        <div
+            class="bg-dark-800 rounded-2xl p-6 w-full max-w-5xl border border-dark-700 shadow-2xl transform transition-all flex flex-col h-[85vh]">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-dark-700 shrink-0">
+                <div>
+                    <h3 class="text-xl font-bold text-white flex items-center gap-2.5">
+                        <svg class="w-6 h-6 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z">
+                            </path>
+                        </svg>
+                        Directory Semua Kontak Sistem
+                    </h3>
+                    <p class="text-xs text-gray-400 mt-0.5">Total Kontak Tersimpan: <span id="directory-total-count"
+                            class="font-bold text-sky-400">0</span> Kontak</p>
+                </div>
+                <button id="close-all-contacts-modal" class="text-gray-400 hover:text-white p-1 rounded-lg">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Controls: Search & Label Filter -->
+            <div
+                class="bg-dark-900 p-3 rounded-xl border border-dark-700 mb-3 flex flex-wrap items-center justify-between gap-3 shrink-0">
+                <div class="relative flex-grow max-w-md">
+                    <input id="directory-search-input" type="text"
+                        placeholder="Cari berdasarkan nama, nomor WA, atau label..."
+                        class="w-full bg-dark-800 border border-dark-700 text-white rounded-lg pl-9 pr-3 py-1.5 text-xs focus:outline-none focus:border-sky-400">
+                    <svg class="w-4 h-4 text-gray-500 absolute left-3 top-2 pointer-events-none" fill="none"
+                        stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                </div>
+
+                <div class="flex items-center gap-2">
+                    <select id="directory-label-filter-select"
+                        class="bg-dark-800 border border-dark-700 text-xs text-white rounded-lg px-3 py-1.5 focus:outline-none focus:border-sky-400 cursor-pointer">
+                        <option value="ALL">Semua Label</option>
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+            </div>
+
+            <!-- Table Container -->
+            <div class="bg-dark-900 border border-dark-700 rounded-xl flex-grow overflow-y-auto scroll-hidden">
+                <table class="w-full text-left text-xs text-gray-300 border-collapse">
+                    <thead
+                        class="bg-dark-800/90 text-gray-400 uppercase tracking-wider text-[10px] sticky top-0 border-b border-dark-700 backdrop-blur-sm z-10">
+                        <tr>
+                            <th class="p-3">Nama Kontak</th>
+                            <th class="p-3">Nomor WhatsApp</th>
+                            <th class="p-3">Label (Stacked)</th>
+                            <th class="p-3">Pesan Terakhir</th>
+                            <th class="p-3 text-right">Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody id="directory-table-body" class="divide-y divide-dark-700/60">
+                        <!-- Rows injected here -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- New Chat Modal -->
+    <div id="new-chat-modal"
+        class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+        <div
+            class="bg-dark-800 rounded-2xl p-6 w-full max-w-sm border border-dark-700 shadow-2xl transform transition-all">
+            <h3 class="text-lg font-semibold mb-2 text-white">Start New Chat</h3>
+            <p class="text-xs text-gray-400 mb-4">Masukkan nomor WhatsApp lengkap dengan kode negara (contoh: 62812...)
+            </p>
+            <input id="new-chat-input" type="text"
+                class="w-full bg-dark-900 border border-dark-700 text-white rounded-xl px-4 py-2 mb-6 focus:outline-none focus:border-brand-500 text-sm"
+                placeholder="628...">
+            <div class="flex justify-end gap-3">
+                <button id="cancel-new-chat"
+                    class="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors">Batal</button>
+                <button id="start-new-chat"
+                    class="px-4 py-2 text-sm bg-brand-500 hover:bg-brand-600 text-dark-900 font-bold rounded-xl transition-colors">Buka
+                    Chat</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Template Manager Modal (Tambah, Edit & Hapus Template + Header Image URL) -->
+    <div id="manage-templates-modal"
+        class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+        <div
+            class="bg-dark-800 rounded-2xl p-6 w-full max-w-lg border border-dark-700 shadow-2xl transform transition-all">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-dark-700">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10">
+                        </path>
+                    </svg>
+                    Kelola Template Meta WhatsApp
+                </h3>
+                <button id="close-manage-templates-modal" class="text-gray-400 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- List of Saved Templates -->
+            <div class="mb-4">
+                <label class="block text-xs font-semibold text-gray-300 mb-2">Daftar Template Aktif:</label>
+                <div id="manage-templates-list" class="space-y-2 max-h-40 overflow-y-auto scroll-hidden pr-1">
+                    <!-- Template items injected here -->
+                </div>
+            </div>
+
+            <!-- Add / Edit Template Form -->
+            <div class="bg-dark-900/60 p-4 rounded-xl border border-dark-700 space-y-3">
+                <h4 id="template-form-title" class="text-xs font-bold text-brand-400 uppercase tracking-wider">+ Tambah
+                    / Edit Template</h4>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-[11px] text-gray-400 mb-1">Nama Template Meta:</label>
+                        <input id="template-input-name" type="text" placeholder="contoh: promo_ramadhan"
+                            class="w-full bg-dark-900 border border-dark-700 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-brand-500">
+                    </div>
+                    <div>
+                        <label class="block text-[11px] text-gray-400 mb-1">Kode Bahasa:</label>
+                        <input id="template-input-lang" type="text" value="id" placeholder="contoh: id atau en_US"
+                            class="w-full bg-dark-900 border border-dark-700 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-brand-500">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-[11px] text-gray-400 mb-1">URL Gambar Header (Opsional - e.g.
+                        ibb.co.com):</label>
+                    <input id="template-input-header-img" type="text" placeholder="https://i.ibb.co.com/..."
+                        class="w-full bg-dark-900 border border-dark-700 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-brand-500">
+                </div>
+
+                <div class="flex justify-end gap-2 pt-1">
+                    <button id="reset-template-form-btn"
+                        class="px-3 py-1 text-xs text-gray-400 hover:text-white hidden">Batal Edit</button>
+                    <button id="save-template-form-btn"
+                        class="px-4 py-1.5 text-xs bg-brand-500 hover:bg-brand-600 text-dark-900 font-bold rounded-lg transition-colors">Simpan
+                        Template</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Label Manager Modal (Edit & Hapus Label Global + Color Swatch Picker) -->
+    <div id="manage-labels-modal"
+        class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+        <div
+            class="bg-dark-800 rounded-2xl p-6 w-full max-w-lg border border-dark-700 shadow-2xl transform transition-all">
+            <div class="flex justify-between items-center mb-3 pb-3 border-b border-dark-700">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <svg class="w-5 h-5 text-amber-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M7 7h.01M7 3h5c.512 0 1.024.195 1.414.586l7 7a2 2 0 010 2.828l-7 7a2 2 0 01-2.828 0l-7-7A1.994 1.994 0 013 12V7a4 4 0 014-4z">
+                        </path>
+                    </svg>
+                    Kelola Label & Pilihan Warna Kustom
+                </h3>
+                <button id="close-manage-labels-modal" class="text-gray-400 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- Form Tambah Label Global Baru -->
+            <div class="bg-dark-900/80 p-3 rounded-xl border border-dark-700 mb-3 space-y-2">
+                <label class="block text-xs font-bold text-amber-400 uppercase tracking-wider">+ Buat Label Global
+                    Baru</label>
+                <div class="flex items-center gap-2">
+                    <input id="new-global-label-input" type="text" placeholder="Contoh: Donatur Pattidana..."
+                        class="flex-grow bg-dark-900 border border-dark-700 text-white rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-amber-400">
+                    <button id="add-global-label-btn"
+                        class="bg-amber-500 hover:bg-amber-600 text-dark-900 font-bold px-3.5 py-1.5 rounded-lg text-xs transition-colors shrink-0 flex items-center gap-1">
+                        + Tambah Label
+                    </button>
+                </div>
+            </div>
+
+            <p class="text-[11px] text-gray-400 mb-2">Kelola daftar label global yang dapat disematkan ke kontak. Ubah
+                nama, tetapkan warna kustom, atau hapus label:</p>
+
+            <div id="manage-labels-list" class="space-y-2.5 max-h-64 overflow-y-auto scroll-hidden pr-1">
+                <!-- Label items injected here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Upload CSV Contacts Modal (VPS Prep) -->
+    <div id="csv-import-modal"
+        class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+        <div
+            class="bg-dark-800 rounded-2xl p-6 w-full max-w-md border border-dark-700 shadow-2xl transform transition-all">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-dark-700">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <svg class="w-5 h-5 text-sky-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12">
+                        </path>
+                    </svg>
+                    Upload Kontak via CSV
+                </h3>
+                <button id="cancel-csv-modal" class="text-gray-400 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <div class="bg-dark-900 p-3.5 rounded-xl border border-dark-700 flex justify-between items-center">
+                    <div>
+                        <p class="text-xs font-semibold text-white">Butuh Format Kolom?</p>
+                        <p class="text-[11px] text-gray-400">Gunakan format header: <code
+                                class="text-sky-400">name,phone,label</code></p>
+                    </div>
+                    <button id="download-csv-template-btn"
+                        class="bg-dark-700 hover:bg-dark-600 text-sky-400 px-3 py-1.5 rounded-lg text-xs font-semibold border border-dark-600 flex items-center gap-1 transition-colors">
+                        <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                        </svg>
+                        Download Template
+                    </button>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Pilih File CSV (.csv):</label>
+                    <input id="csv-file-input" type="file" accept=".csv"
+                        class="w-full bg-dark-900 border border-dark-700 text-xs text-gray-300 rounded-xl px-3 py-2 focus:outline-none focus:border-sky-400 cursor-pointer">
+                </div>
+
+                <div class="text-[11px] text-gray-400 bg-dark-900/50 p-2.5 rounded-lg border border-dark-700">
+                    <p class="font-semibold text-emerald-400 mb-1">✓ Integritas Log Chat Dijamin</p>
+                    <p>Proses import memperbarui nama & label kontak tanpa menghapus riwayat pesan yang ada di database.
+                    </p>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-3 pt-3 border-t border-dark-700">
+                <button id="cancel-csv-modal-btn"
+                    class="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors">Batal</button>
+                <button id="submit-csv-btn"
+                    class="px-5 py-2 text-sm bg-sky-500 hover:bg-sky-600 text-dark-900 font-bold rounded-xl transition-all shadow-lg flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path>
+                    </svg>
+                    Proses Upload CSV
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Manual Contact Modal (1-by-1) -->
+    <div id="add-contact-modal"
+        class="hidden fixed inset-0 bg-black bg-opacity-60 z-50 flex items-center justify-center p-4">
+        <div
+            class="bg-dark-800 rounded-2xl p-6 w-full max-w-md border border-dark-700 shadow-2xl transform transition-all">
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-dark-700">
+                <h3 class="text-lg font-bold text-white flex items-center gap-2">
+                    <svg class="w-5 h-5 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z">
+                        </path>
+                    </svg>
+                    Tambah Kontak Manual
+                </h3>
+                <button id="cancel-add-contact-modal" class="text-gray-400 hover:text-white">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+
+            <div class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Nama Kontak:</label>
+                    <input id="manual-contact-name" type="text" placeholder="Contoh: Andri Martin"
+                        class="w-full bg-dark-900 border border-dark-700 text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Nomor WhatsApp (Kode 62):</label>
+                    <input id="manual-contact-phone" type="text" placeholder="Contoh: 628588888888"
+                        class="w-full bg-dark-900 border border-dark-700 text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-300 mb-1">Label Kontak (Opsional):</label>
+                    <select id="manual-contact-label-select"
+                        class="w-full bg-dark-900 border border-dark-700 text-white rounded-xl px-3 py-2 text-sm focus:outline-none focus:border-brand-500">
+                        <!-- Populated dynamically -->
+                    </select>
+                </div>
+            </div>
+
+            <div class="mt-6 flex justify-end gap-3 pt-3 border-t border-dark-700">
+                <button id="cancel-add-contact-btn"
+                    class="px-4 py-2 text-sm text-gray-400 hover:text-white transition-colors">Batal</button>
+                <button id="save-manual-contact-btn"
+                    class="px-5 py-2 text-sm bg-brand-500 hover:bg-brand-600 text-dark-900 font-bold rounded-xl transition-all shadow-lg flex items-center gap-2">
+                    Simpan Kontak
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ENLARGED BLAST MODAL (Default NONE Selected Template & UNCHECKED Contacts) -->
+    <div id="blast-modal" class="hidden fixed inset-0 bg-black bg-opacity-70 z-50 flex items-center justify-center p-4">
+        <div
+            class="bg-dark-800 rounded-2xl p-6 w-full max-w-4xl border border-dark-700 shadow-2xl transform transition-all flex flex-col h-[85vh] max-h-[800px]">
+            <!-- Modal Header -->
+            <div class="flex justify-between items-center mb-4 pb-3 border-b border-dark-700 shrink-0">
+                <h3 class="text-xl font-bold text-white flex items-center gap-2.5">
+                    <svg class="w-6 h-6 text-brand-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z">
+                        </path>
+                    </svg>
+                    Konfigurasi Blast WhatsApp Meta API
+                </h3>
+                <button id="cancel-blast-modal" class="text-gray-400 hover:text-white p-1 rounded-lg">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12">
+                        </path>
+                    </svg>
+                </button>
+            </div>
+
+            <!-- 2-Column Body -->
+            <div class="grid grid-cols-1 md:grid-cols-12 gap-6 overflow-hidden flex-grow">
+                <!-- Left Column: Template & Image Configurations (5 cols) -->
+                <div
+                    class="md:col-span-5 flex flex-col space-y-4 overflow-y-auto scroll-hidden pr-1 border-r border-dark-700/60">
+                    <div>
+                        <label class="block text-xs font-bold text-gray-200 mb-1.5">1. Pilih Template Pesan
+                            Meta:</label>
+                        <select id="blast-modal-template-select"
+                            class="w-full bg-dark-900 border border-dark-700 text-white rounded-xl px-3.5 py-2.5 text-sm focus:outline-none focus:border-brand-500 cursor-pointer">
+                            <option value="">-- Pilih Template Meta --</option>
+                            <!-- Populated dynamically -->
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-200 mb-1.5">2. URL Gambar Header (ibb.co.com /
+                            Custom):</label>
+                        <input id="blast-header-img-input" type="text" placeholder="https://i.ibb.co.com/..."
+                            class="w-full bg-dark-900 border border-dark-700 text-white rounded-xl px-3.5 py-2 text-xs focus:outline-none focus:border-brand-500 font-mono">
+                        <p class="text-[10px] text-gray-400 mt-1">Link gambar header Meta API (misal:
+                            `https://i.ibb.co.com/...`)</p>
+                    </div>
+
+                    <!-- Live Image Thumbnail Preview -->
+                    <div>
+                        <span class="block text-[11px] font-semibold text-gray-400 mb-1">Pratinjau Gambar Header:</span>
+                        <div
+                            class="w-full h-36 rounded-xl bg-dark-900 border border-dark-700 overflow-hidden flex items-center justify-center relative group">
+                            <img id="blast-header-img-preview"
+                                src="https://via.placeholder.com/400x200?text=Pilih+Template+Terlebih+Dahulu"
+                                alt="Header Preview" class="w-full h-full object-cover"
+                                onerror="this.src='https://via.placeholder.com/400x200?text=Format+Gambar+Tidak+Valid';">
+                            <div
+                                class="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center">
+                                <a id="blast-header-img-link" href="#" target="_blank"
+                                    class="text-xs text-white bg-dark-800/80 px-3 py-1 rounded-lg border border-dark-600">Buka
+                                    Link Gambar</a>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-xs font-bold text-gray-200 mb-1.5">3. Filter Target Label & Status Blast:</label>
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                            <select id="blast-target-label-select"
+                                class="w-full bg-dark-900 border border-dark-700 text-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-brand-500 cursor-pointer">
+                                <option value="ALL">Semua Label / All Labels</option>
+                                <!-- Populated dynamically -->
+                            </select>
+                            <select id="blast-status-filter-select"
+                                class="w-full bg-dark-900 border border-dark-700 text-white rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-brand-500 cursor-pointer">
+                                <option value="ALL">Semua Status Blast</option>
+                                <option value="NOT_BLASTED" selected>⚡ Belum Pernah Di-blast</option>
+                                <option value="BLASTED_TODAY">✓ Di-blast Hari Ini</option>
+                                <option value="BLASTED">✓ Sudah Pernah Di-blast</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right Column: Interactive Contact Checklist (7 cols) -->
+                <div class="md:col-span-7 flex flex-col overflow-hidden">
+                    <div class="flex justify-between items-center mb-1.5 shrink-0">
+                        <label class="block text-xs font-bold text-gray-200">4. Target Kontak Terpilih:</label>
+                        <span
+                            class="text-xs text-amber-400 font-bold bg-amber-500/10 px-2 py-0.5 rounded-full border border-amber-500/20"
+                            id="blast-quota-info">Warning Threshold: 250 chat/hari</span>
+                    </div>
+
+                    <!-- Quick Select Preset Toolbar -->
+                    <div class="flex flex-wrap items-center justify-between gap-1.5 mb-2 bg-dark-900 p-2 rounded-xl border border-dark-700 shrink-0">
+                        <span class="text-[11px] font-bold text-gray-300">Pilih Cepat Teratas:</span>
+                        <div class="flex items-center gap-1">
+                            <button type="button" id="blast-select-25-btn" class="bg-dark-800 hover:bg-brand-500/20 hover:text-brand-400 text-gray-300 border border-dark-600 px-2 py-0.5 rounded-lg text-xs font-bold transition-all">25</button>
+                            <button type="button" id="blast-select-50-btn" class="bg-dark-800 hover:bg-brand-500/20 hover:text-brand-400 text-gray-300 border border-dark-600 px-2 py-0.5 rounded-lg text-xs font-bold transition-all">50</button>
+                            <button type="button" id="blast-select-100-btn" class="bg-dark-800 hover:bg-brand-500/20 hover:text-brand-400 text-gray-300 border border-dark-600 px-2 py-0.5 rounded-lg text-xs font-bold transition-all">100</button>
+                            <button type="button" id="blast-select-250-btn" class="bg-dark-800 hover:bg-brand-500/20 hover:text-brand-400 text-gray-300 border border-dark-600 px-2 py-0.5 rounded-lg text-xs font-bold transition-all">250</button>
+                            <button type="button" id="blast-deselect-all-btn" class="bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-0.5 rounded-lg text-xs font-bold transition-all">Reset</button>
+                        </div>
+                    </div>
+
+                    <!-- Search & Select All Bar -->
+                    <div
+                        class="bg-dark-900 p-2 rounded-xl border border-dark-700 mb-2 flex items-center justify-between gap-3 shrink-0">
+                        <label
+                            class="flex items-center gap-2 text-xs font-semibold text-gray-200 cursor-pointer shrink-0">
+                            <input id="blast-select-all-checkbox" type="checkbox"
+                                class="w-4 h-4 accent-brand-500 rounded cursor-pointer">
+                            <span>Pilih Semua Hasil Filter (<span id="blast-selected-counter"
+                                    class="text-brand-400 font-bold">0/0</span>)</span>
+                        </label>
+
+                        <div class="relative flex-grow">
+                            <input id="blast-search-input" type="text" placeholder="Cari kontak blast..."
+                                class="w-full bg-dark-800 border border-dark-700 text-white rounded-lg pl-8 pr-2 py-1 text-xs focus:outline-none focus:border-brand-500">
+                            <svg class="w-3.5 h-3.5 text-gray-500 absolute left-2.5 top-2 pointer-events-none"
+                                fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                    d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                            </svg>
+                        </div>
+                    </div>
+
+                    <!-- Scrollable Checklist Container -->
+                    <div id="blast-contacts-checklist"
+                        class="bg-dark-900 border border-dark-700 rounded-xl flex-grow overflow-y-auto scroll-hidden divide-y divide-dark-700/60 p-1">
+                        <!-- Contact checklist items injected here -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="mt-4 flex justify-end gap-3 pt-3 border-t border-dark-700 shrink-0">
+                <button id="cancel-blast-modal-btn"
+                    class="px-5 py-2.5 text-sm text-gray-400 hover:text-white transition-colors">Batal</button>
+                <button id="confirm-blast-btn"
+                    class="px-6 py-2.5 text-sm bg-brand-500 hover:bg-brand-600 text-dark-900 font-bold rounded-xl transition-all shadow-lg flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"></path>
+                    </svg>
+                    Kirim Blast Sekarang
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- META LIMIT WARNING CONFIRMATION MODAL -->
+    <div id="blast-warning-modal" class="hidden fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4">
+        <div class="bg-dark-800 rounded-2xl p-6 w-full max-w-md border border-amber-500/40 shadow-2xl space-y-4">
+            <div class="flex items-center gap-3 text-amber-400">
+                <div class="w-10 h-10 rounded-full bg-amber-500/20 flex items-center justify-center shrink-0">
+                    <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                </div>
+                <div>
+                    <h4 class="font-bold text-white text-base">Peringatan Limit Messaging Meta</h4>
+                    <p class="text-xs text-amber-400/90 font-medium">Batas Kirim > 250 Chat/Hari</p>
+                </div>
+            </div>
+            <div class="text-xs text-gray-300 leading-relaxed bg-dark-900 p-3.5 rounded-xl border border-dark-700 space-y-2">
+                <p>Anda telah memilih <strong id="warning-selected-count" class="text-brand-400 font-bold">0</strong> kontak target blast.</p>
+                <p>Ketentuan standar WhatsApp Meta API tier dasar memiliki limit <span class="text-amber-400 font-semibold">250 chat/24 jam</span>. Jika akun Meta Anda belum di-upgrade ke tier <span class="text-brand-400 font-semibold">2.000 chat/hari</span>, Meta dapat membatasi pesan selebihnya.</p>
+                <p class="text-gray-400 italic text-[11px]">*Note: Syarat otomatis upgrade tier 2.000 dari Meta adalah mencapai 100+ conversation unik dalam 7 hari.</p>
+            </div>
+            <div class="flex justify-end gap-2.5 pt-2">
+                <button id="cancel-warning-btn" class="px-4 py-2 text-xs bg-dark-700 hover:bg-dark-600 text-gray-300 rounded-xl font-medium transition-colors">Batal / Sesuaikan</button>
+                <button id="proceed-warning-btn" class="px-4 py-2 text-xs bg-brand-500 hover:bg-brand-600 text-dark-900 font-bold rounded-xl transition-all shadow">Ya, Tetap Kirim Sekarang</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let activeContact = null;
+        let contactsCache = [];
+        let labelsCache = ["Donor Darah", "Donatur", "Pengurus", "Umat Baru", "Donatur Pattidana"];
+        let editingTemplateIndex = null;
+
+        // Label Color Palette Style Registry
+        const LABEL_COLOR_STYLES = {
+            red: 'bg-red-500/20 text-red-400 border-red-500/40 font-bold shadow-sm',
+            emerald: 'bg-emerald-500/20 text-emerald-400 border-emerald-500/40 font-semibold shadow-sm',
+            sky: 'bg-sky-500/20 text-sky-400 border-sky-500/40 font-semibold shadow-sm',
+            purple: 'bg-purple-500/20 text-purple-400 border-purple-500/40 font-semibold shadow-sm',
+            amber: 'bg-amber-500/20 text-amber-400 border-amber-500/40 font-semibold shadow-sm',
+            pink: 'bg-pink-500/20 text-pink-400 border-pink-500/40 font-semibold shadow-sm',
+            teal: 'bg-teal-500/20 text-teal-400 border-teal-500/40 font-semibold shadow-sm',
+            indigo: 'bg-indigo-500/20 text-indigo-400 border-indigo-500/40 font-semibold shadow-sm',
+            cyan: 'bg-cyan-500/20 text-cyan-400 border-cyan-500/40 font-semibold shadow-sm',
+            rose: 'bg-rose-500/20 text-rose-400 border-rose-500/40 font-semibold shadow-sm'
+        };
+
+        const DEFAULT_LABEL_COLORS = {
+            "donor darah": "red",
+            "donatur": "emerald",
+            "pengurus": "sky",
+            "umat baru": "purple",
+            "donatur pattidana": "amber"
+        };
+
+        function getSavedLabelColors() {
+            try {
+                const saved = localStorage.getItem('wa_label_colors');
+                return saved ? JSON.parse(saved) : DEFAULT_LABEL_COLORS;
+            } catch (e) {
+                return DEFAULT_LABEL_COLORS;
+            }
+        }
+
+        function setSavedLabelColor(labelName, colorKey) {
+            const map = getSavedLabelColors();
+            map[labelName.trim().toLowerCase()] = colorKey;
+            localStorage.setItem('wa_label_colors', JSON.stringify(map));
+            renderContactsList(contactsCache);
+            renderManageLabelsList();
+        }
+
+        // DOM Elements
+        const contactsListEl = document.getElementById('contacts-list');
+        const chatEmptyEl = document.getElementById('chat-empty');
+        const chatHeaderEl = document.getElementById('chat-header');
+        const chatMessagesEl = document.getElementById('chat-messages');
+        const chatFooterEl = document.getElementById('chat-footer');
+        const activeChatNameEl = document.getElementById('active-chat-name');
+        const activeChatPhoneEl = document.getElementById('active-chat-phone');
+        const activeChatLabelBadges = document.getElementById('active-chat-label-badges');
+        const labelSelect = document.getElementById('label-select');
+        const closeChatBtn = document.getElementById('close-chat-btn');
+        const deleteContactBtn = document.getElementById('delete-contact-btn');
+        const topNavContactsCount = document.getElementById('top-nav-contacts-count');
+
+        const chatInput = document.getElementById('chat-input');
+        const chatSendBtn = document.getElementById('chat-send-btn');
+        const attachBtn = document.getElementById('attach-btn');
+        const mediaFileInput = document.getElementById('media-file-input');
+        const socketStatus = document.getElementById('socket-status');
+        const blastBtn = document.getElementById('blast-btn');
+        const newChatBtn = document.getElementById('new-chat-btn');
+        const newChatModal = document.getElementById('new-chat-modal');
+        const cancelNewChat = document.getElementById('cancel-new-chat');
+        const startNewChat = document.getElementById('start-new-chat');
+        const newChatInput = document.getElementById('new-chat-input');
+
+        // All Contacts Directory Modal Elements
+        const openAllContactsModalBtn = document.getElementById('open-all-contacts-modal-btn');
+        const allContactsModal = document.getElementById('all-contacts-modal');
+        const closeAllContactsModal = document.getElementById('close-all-contacts-modal');
+        const directoryTotalCount = document.getElementById('directory-total-count');
+        const directorySearchInput = document.getElementById('directory-search-input');
+        const directoryLabelFilterSelect = document.getElementById('directory-label-filter-select');
+        const directoryTableBody = document.getElementById('directory-table-body');
+
+        // CSV Modal Elements
+        const openCsvModalBtn = document.getElementById('open-csv-modal');
+        const csvImportModal = document.getElementById('csv-import-modal');
+        const cancelCsvModal = document.getElementById('cancel-csv-modal');
+        const cancelCsvModalBtn = document.getElementById('cancel-csv-modal-btn');
+        const downloadCsvTemplateBtn = document.getElementById('download-csv-template-btn');
+        const csvFileInput = document.getElementById('csv-file-input');
+        const submitCsvBtn = document.getElementById('submit-csv-btn');
+
+        // Add Contact Manual Modal Elements
+        const openAddContactModalBtn = document.getElementById('open-add-contact-modal');
+        const addContactModal = document.getElementById('add-contact-modal');
+        const cancelAddContactModal = document.getElementById('cancel-add-contact-modal');
+        const cancelAddContactBtn = document.getElementById('cancel-add-contact-btn');
+        const manualContactName = document.getElementById('manual-contact-name');
+        const manualContactPhone = document.getElementById('manual-contact-phone');
+        const manualContactLabelSelect = document.getElementById('manual-contact-label-select');
+        const saveManualContactBtn = document.getElementById('save-manual-contact-btn');
+
+        // Blast Modal Elements
+        const blastModal = document.getElementById('blast-modal');
+        const cancelBlastModal = document.getElementById('cancel-blast-modal');
+        const cancelBlastModalBtn = document.getElementById('cancel-blast-modal-btn');
+        const blastModalTemplateSelect = document.getElementById('blast-modal-template-select');
+        const blastHeaderImgInput = document.getElementById('blast-header-img-input');
+        const blastHeaderImgPreview = document.getElementById('blast-header-img-preview');
+        const blastHeaderImgLink = document.getElementById('blast-header-img-link');
+        const blastTargetLabelSelect = document.getElementById('blast-target-label-select');
+        const blastStatusFilterSelect = document.getElementById('blast-status-filter-select');
+        const blastSearchInput = document.getElementById('blast-search-input');
+        const blastSelectAllCheckbox = document.getElementById('blast-select-all-checkbox');
+        const blastSelectedCounter = document.getElementById('blast-selected-counter');
+        const blastContactsChecklist = document.getElementById('blast-contacts-checklist');
+        const confirmBlastBtn = document.getElementById('confirm-blast-btn');
+
+        const blastSelect25Btn = document.getElementById('blast-select-25-btn');
+        const blastSelect50Btn = document.getElementById('blast-select-50-btn');
+        const blastSelect100Btn = document.getElementById('blast-select-100-btn');
+        const blastSelect250Btn = document.getElementById('blast-select-250-btn');
+        const blastDeselectAllBtn = document.getElementById('blast-deselect-all-btn');
+
+        const blastWarningModal = document.getElementById('blast-warning-modal');
+        const warningSelectedCount = document.getElementById('warning-selected-count');
+        const cancelWarningBtn = document.getElementById('cancel-warning-btn');
+        const proceedWarningBtn = document.getElementById('proceed-warning-btn');
+        let pendingBlastPayload = null;
+
+        // Manage Templates Modal Elements
+        const openManageTemplatesBtn = document.getElementById('open-manage-templates-btn');
+        const manageTemplatesModal = document.getElementById('manage-templates-modal');
+        const closeManageTemplatesModal = document.getElementById('close-manage-templates-modal');
+        const manageTemplatesList = document.getElementById('manage-templates-list');
+        const templateFormTitle = document.getElementById('template-form-title');
+        const templateInputName = document.getElementById('template-input-name');
+        const templateInputLang = document.getElementById('template-input-lang');
+        const templateInputHeaderImg = document.getElementById('template-input-header-img');
+        const resetTemplateFormBtn = document.getElementById('reset-template-form-btn');
+        const saveTemplateFormBtn = document.getElementById('save-template-form-btn');
+
+        // Manage Labels Modal Elements
+        const openManageLabelsBtn = document.getElementById('open-manage-labels-btn');
+        const manageLabelsModal = document.getElementById('manage-labels-modal');
+        const closeManageLabelsModal = document.getElementById('close-manage-labels-modal');
+        const manageLabelsList = document.getElementById('manage-labels-list');
+
+        // Analytics elements
+        const statSent = document.getElementById('stat-sent');
+        const statDelivered = document.getElementById('stat-delivered');
+        const statRead = document.getElementById('stat-read');
+        const statFailed = document.getElementById('stat-failed');
+
+        // Dynamic Badge Styling with Custom Color Palette Selection
+        function getLabelBadgeStyle(label) {
+            if (!label) return 'bg-gray-500/10 text-gray-400 border-gray-500/30';
+            const normalized = label.trim().toLowerCase();
+            const colorMap = getSavedLabelColors();
+
+            const customColorKey = colorMap[normalized];
+            if (customColorKey && LABEL_COLOR_STYLES[customColorKey]) {
+                return LABEL_COLOR_STYLES[customColorKey];
+            }
+
+            // Fallback deterministic colors
+            const colors = [
+                'pink', 'indigo', 'teal', 'cyan', 'orange', 'lime', 'rose'
+            ];
+            let hash = 0;
+            for (let i = 0; i < normalized.length; i++) {
+                hash = normalized.charCodeAt(i) + ((hash << 5) - hash);
+            }
+            const index = Math.abs(hash) % colors.length;
+            return LABEL_COLOR_STYLES[colors[index]] || 'bg-gray-500/20 text-gray-300 border-gray-500/40 font-semibold';
+        }
+
+        // Render Stacked Label Badges HTML for a contact
+        function renderStackedLabelBadges(labelStr, removable = false) {
+            if (!labelStr) return '';
+            const labels = labelStr.split(',').map(s => s.strip ? s.strip() : s.trim()).filter(Boolean);
+            if (labels.length === 0) return '';
+
+            return labels.map(lbl => {
+                const style = getLabelBadgeStyle(lbl);
+                const removeBtn = removable
+                    ? `<button class="remove-label-tag-btn ml-1 hover:text-white text-xs font-bold" data-label="${escapeHtml(lbl)}" title="Lepas label ini">&times;</button>`
+                    : '';
+                return `<span class="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full border ${style}">${escapeHtml(lbl)}${removeBtn}</span>`;
+            }).join(' ');
+        }
+
+        // Custom Template Storage & Options Management
+        const DEFAULT_TEMPLATES = [
+            { name: "donor_darah", lang: "id", header_image_url: "https://i.ibb.co.com/9HMSFKby/Donor-Darah.jpg" },
+            { name: "hello_world", lang: "en_US", header_image_url: "" }
+        ];
+
+        function getSavedTemplates() {
+            try {
+                const saved = localStorage.getItem('wa_custom_templates');
+                return saved ? JSON.parse(saved) : DEFAULT_TEMPLATES;
+            } catch (e) {
+                return DEFAULT_TEMPLATES;
+            }
+        }
+
+        function saveTemplates(templates) {
+            localStorage.setItem('wa_custom_templates', JSON.stringify(templates));
+            renderTemplateOptions();
+            renderManageTemplatesList();
+        }
+
+        function renderTemplateOptions() {
+            const templates = getSavedTemplates();
+            blastModalTemplateSelect.innerHTML = `<option value="">-- Pilih Template Meta --</option>`;
+
+            templates.forEach(t => {
+                const opt = document.createElement('option');
+                opt.value = t.name;
+                opt.setAttribute('data-lang', t.lang);
+                opt.setAttribute('data-header-img', t.header_image_url || '');
+                opt.textContent = `${t.name} [${t.lang}]`;
+                blastModalTemplateSelect.appendChild(opt);
+            });
+
+            syncBlastHeaderImageFromSelection();
+        }
+
+        function syncBlastHeaderImageFromSelection() {
+            const selectedOpt = blastModalTemplateSelect.options[blastModalTemplateSelect.selectedIndex];
+            if (selectedOpt && selectedOpt.value) {
+                const defaultImg = selectedOpt.getAttribute('data-header-img') || (selectedOpt.value === 'donor_darah' ? 'https://i.ibb.co.com/9HMSFKby/Donor-Darah.jpg' : '');
+                blastHeaderImgInput.value = defaultImg;
+                updateBlastImagePreview(defaultImg);
+            } else {
+                blastHeaderImgInput.value = '';
+                updateBlastImagePreview('');
+            }
+        }
+
+        function updateBlastImagePreview(url) {
+            const cleanUrl = url ? url.trim() : '';
+            if (cleanUrl) {
+                blastHeaderImgPreview.src = cleanUrl;
+                blastHeaderImgLink.href = cleanUrl;
+            } else {
+                blastHeaderImgPreview.src = 'https://via.placeholder.com/400x200?text=Pilih+Template+Terlebih+Dahulu';
+                blastHeaderImgLink.href = '#';
+            }
+        }
+
+        blastHeaderImgInput.addEventListener('input', (e) => {
+            updateBlastImagePreview(e.target.value);
+        });
+
+        blastModalTemplateSelect.addEventListener('change', syncBlastHeaderImageFromSelection);
+
+        function renderManageTemplatesList() {
+            const templates = getSavedTemplates();
+            manageTemplatesList.innerHTML = '';
+
+            templates.forEach((t, index) => {
+                const item = document.createElement('div');
+                item.className = 'flex justify-between items-center bg-dark-900 p-2.5 rounded-xl border border-dark-700 text-xs';
+                const imgBadge = t.header_image_url ? `<span class="text-[9px] text-sky-400 bg-sky-500/10 px-1.5 py-0.5 rounded border border-sky-500/20 truncate max-w-[120px]" title="${escapeHtml(t.header_image_url)}">📷 Gambar</span>` : '';
+                item.innerHTML = `
+                    <div class="flex items-center gap-2 min-w-0 pr-2">
+                        <span class="font-bold text-white truncate">${escapeHtml(t.name)}</span>
+                        <span class="text-[10px] text-brand-400 bg-brand-500/10 px-1.5 py-0.5 rounded border border-brand-500/20 shrink-0">${escapeHtml(t.lang)}</span>
+                        ${imgBadge}
+                    </div>
+                    <div class="flex items-center gap-1.5 shrink-0">
+                        <button class="edit-tpl-btn text-gray-400 hover:text-sky-400 p-1 transition-colors" data-index="${index}" title="Edit Template">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        </button>
+                        <button class="del-tpl-btn text-gray-400 hover:text-red-400 p-1 transition-colors" data-index="${index}" title="Hapus Template">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                `;
+                manageTemplatesList.appendChild(item);
+            });
+        }
+
+        // Manage Templates Form Handlers
+        openManageTemplatesBtn.addEventListener('click', () => {
+            resetTemplateForm();
+            renderManageTemplatesList();
+            manageTemplatesModal.classList.remove('hidden');
+        });
+
+        closeManageTemplatesModal.addEventListener('click', () => {
+            manageTemplatesModal.classList.add('hidden');
+        });
+
+        function resetTemplateForm() {
+            editingTemplateIndex = null;
+            templateFormTitle.innerText = "+ Tambah Template Meta Baru";
+            templateInputName.value = '';
+            templateInputLang.value = 'id';
+            templateInputHeaderImg.value = '';
+            resetTemplateFormBtn.classList.add('hidden');
+        }
+
+        resetTemplateFormBtn.addEventListener('click', resetTemplateForm);
+
+        saveTemplateFormBtn.addEventListener('click', () => {
+            const name = templateInputName.value.trim().toLowerCase().replace(/\s+/g, '_');
+            const lang = templateInputLang.value.trim() || 'id';
+            const header_image_url = templateInputHeaderImg.value.trim();
+
+            if (!name) {
+                alert("Nama template tidak boleh kosong.");
+                return;
+            }
+
+            const templates = getSavedTemplates();
+
+            if (editingTemplateIndex !== null) {
+                templates[editingTemplateIndex] = { name, lang, header_image_url };
+            } else {
+                if (!templates.some(t => t.name === name && t.lang === lang)) {
+                    templates.push({ name, lang, header_image_url });
+                }
+            }
+
+            saveTemplates(templates);
+            resetTemplateForm();
+        });
+
+        manageTemplatesList.addEventListener('click', (e) => {
+            const editBtn = e.target.closest('.edit-tpl-btn');
+            const delBtn = e.target.closest('.del-tpl-btn');
+            const templates = getSavedTemplates();
+
+            if (editBtn) {
+                const idx = parseInt(editBtn.dataset.index);
+                editingTemplateIndex = idx;
+                const t = templates[idx];
+                templateFormTitle.innerText = "Edit Template Meta";
+                templateInputName.value = t.name;
+                templateInputLang.value = t.lang;
+                templateInputHeaderImg.value = t.header_image_url || '';
+                resetTemplateFormBtn.classList.remove('hidden');
+            } else if (delBtn) {
+                const idx = parseInt(delBtn.dataset.index);
+                if (confirm(`Hapus template '${templates[idx].name}'?`)) {
+                    templates.splice(idx, 1);
+                    saveTemplates(templates);
+                    resetTemplateForm();
+                }
+            }
+        });
+
+        // Fetch & Render Labels for Select Dropdowns
+        async function loadLabels() {
+            try {
+                const res = await fetch('/api/chat/labels');
+                labelsCache = await res.json();
+                renderLabelSelects();
+                renderManageLabelsList();
+            } catch (err) {
+                console.error("Failed to load labels", err);
+                renderLabelSelects();
+                renderManageLabelsList();
+            }
+        }
+
+        function renderLabelSelects() {
+            // 1. Header Label Select
+            labelSelect.innerHTML = `<option value="">+ Tambah Label Kontak...</option>`;
+            labelsCache.forEach(lbl => {
+                const opt = document.createElement('option');
+                opt.value = lbl;
+                opt.textContent = lbl;
+                labelSelect.appendChild(opt);
+            });
+            const newOpt = document.createElement('option');
+            newOpt.value = "__MANAGE_LABELS__";
+            newOpt.textContent = "⚙️ Kelola / Buat Label Baru...";
+            newOpt.className = "text-amber-400 font-bold";
+            labelSelect.appendChild(newOpt);
+
+            // 2. Blast Target Label Select
+            blastTargetLabelSelect.innerHTML = `<option value="ALL">Semua Kontak / All Labels</option>`;
+            labelsCache.forEach(lbl => {
+                const opt = document.createElement('option');
+                opt.value = lbl;
+                opt.textContent = `Label: ${lbl}`;
+                blastTargetLabelSelect.appendChild(opt);
+            });
+
+            // 3. Manual Contact Label Select
+            manualContactLabelSelect.innerHTML = `<option value="">-- Tanpa Label --</option>`;
+            labelsCache.forEach(lbl => {
+                const opt = document.createElement('option');
+                opt.value = lbl;
+                opt.textContent = lbl;
+                manualContactLabelSelect.appendChild(opt);
+            });
+
+            // 4. Directory Label Filter Select
+            directoryLabelFilterSelect.innerHTML = `<option value="ALL">Semua Label</option>`;
+            labelsCache.forEach(lbl => {
+                const opt = document.createElement('option');
+                opt.value = lbl;
+                opt.textContent = `Label: ${lbl}`;
+                directoryLabelFilterSelect.appendChild(opt);
+            });
+        }
+
+        function renderManageLabelsList() {
+            manageLabelsList.innerHTML = '';
+            if (labelsCache.length === 0) {
+                manageLabelsList.innerHTML = `<div class="text-xs text-gray-500 p-3 text-center">Belum ada label aktif</div>`;
+                return;
+            }
+
+            const colorMap = getSavedLabelColors();
+
+            labelsCache.forEach(lbl => {
+                const item = document.createElement('div');
+                item.className = 'flex justify-between items-center bg-dark-900 p-2.5 rounded-xl border border-dark-700 text-xs flex-wrap gap-2';
+
+                const currentColor = colorMap[lbl.trim().toLowerCase()] || 'default';
+
+                const swatchHtml = Object.keys(LABEL_COLOR_STYLES).map(c => `
+                    <button type="button" class="color-swatch-btn w-4 h-4 rounded-full border border-white/20 transition-transform ${c === currentColor ? 'scale-125 ring-2 ring-white' : 'opacity-70 hover:opacity-100'} ${LABEL_COLOR_STYLES[c].split(' ')[0]}" data-label="${escapeHtml(lbl)}" data-color="${c}" title="Warna ${c}"></button>
+                `).join('');
+
+                item.innerHTML = `
+                    <div class="flex items-center gap-2">
+                        <span class="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full border ${getLabelBadgeStyle(lbl)}">${escapeHtml(lbl)}</span>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-1 bg-dark-800 px-2 py-1 rounded-lg border border-dark-700">
+                            ${swatchHtml}
+                        </div>
+                        <button class="rename-lbl-btn text-gray-400 hover:text-sky-400 p-1 transition-colors" data-label="${escapeHtml(lbl)}" title="Ubah Nama Label">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path></svg>
+                        </button>
+                        <button class="del-lbl-btn text-gray-400 hover:text-red-400 p-1 transition-colors" data-label="${escapeHtml(lbl)}" title="Hapus Label Secara Global">
+                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                        </button>
+                    </div>
+                `;
+                manageLabelsList.appendChild(item);
+            });
+        }
+
+        openManageLabelsBtn.addEventListener('click', () => {
+            renderManageLabelsList();
+            manageLabelsModal.classList.remove('hidden');
+        });
+
+        closeManageLabelsModal.addEventListener('click', () => {
+            manageLabelsModal.classList.add('hidden');
+        });
+
+        manageLabelsList.addEventListener('click', async (e) => {
+            const swatchBtn = e.target.closest('.color-swatch-btn');
+            const renameBtn = e.target.closest('.rename-lbl-btn');
+            const delBtn = e.target.closest('.del-lbl-btn');
+
+            if (swatchBtn) {
+                const labelName = swatchBtn.dataset.label;
+                const colorKey = swatchBtn.dataset.color;
+                setSavedLabelColor(labelName, colorKey);
+            } else if (renameBtn) {
+                const oldLabel = renameBtn.dataset.label;
+                const newLabel = prompt(`Ubah nama label '${oldLabel}' menjadi:`, oldLabel);
+                if (newLabel && newLabel.trim() && newLabel.trim() !== oldLabel) {
+                    try {
+                        const res = await fetch('/api/labels/rename', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ old_label: oldLabel, new_label: newLabel.trim() })
+                        });
+                        const data = await res.json();
+                        alert(data.message);
+                        await loadLabels();
+                        loadContacts();
+                    } catch (err) {
+                        alert("Gagal mengubah nama label.");
+                    }
+                }
+            } else if (delBtn) {
+                const labelName = delBtn.dataset.label;
+                if (confirm(`Hapus label '${labelName}' dari seluruh kontak?`)) {
+                    try {
+                        const res = await fetch('/api/labels/delete', {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            body: JSON.stringify({ label_name: labelName })
+                        });
+                        const data = await res.json();
+                        alert(data.message);
+                        await loadLabels();
+                        loadContacts();
+                    } catch (err) {
+                        alert("Gagal menghapus label.");
+                    }
+                }
+            }
+        });
+
+        // ALL CONTACTS DIRECTORY MODAL HANDLERS
+        function renderDirectoryTable() {
+            const search = directorySearchInput.value.toLowerCase().trim();
+            const labelFilter = directoryLabelFilterSelect.value;
+
+            let filtered = contactsCache;
+
+            if (labelFilter !== 'ALL') {
+                const targetNorm = labelFilter.trim().toLowerCase();
+                filtered = filtered.filter(c => {
+                    if (!c.label) return false;
+                    const parts = c.label.split(',').map(p => p.trim().toLowerCase());
+                    return parts.includes(targetNorm);
+                });
+            }
+
+            if (search) {
+                filtered = filtered.filter(c =>
+                    (c.name && c.name.toLowerCase().includes(search)) ||
+                    (c.phone_number && c.phone_number.includes(search)) ||
+                    (c.label && c.label.toLowerCase().includes(search)) ||
+                    (c.last_message && c.last_message.toLowerCase().includes(search))
+                );
+            }
+
+            directoryTotalCount.innerText = filtered.length;
+            directoryTableBody.innerHTML = '';
+
+            if (filtered.length === 0) {
+                directoryTableBody.innerHTML = `<tr><td colspan="5" class="p-6 text-center text-xs text-gray-500">Tidak ada kontak yang ditemukan dalam directory.</td></tr>`;
+                return;
+            }
+
+            filtered.forEach(c => {
+                const row = document.createElement('tr');
+                row.className = 'hover:bg-dark-800/80 transition-colors border-b border-dark-700/60';
+
+                const time = c.last_message_at ? new Date(c.last_message_at + 'Z').toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+                const stackedBadges = renderStackedLabelBadges(c.label) || '<span class="text-gray-500 italic text-[11px]">No Label</span>';
+                const lastMsgText = c.last_message ? escapeHtml(c.last_message) : '-';
+
+                row.innerHTML = `
+                    <td class="p-3 font-semibold text-white truncate max-w-[150px]">${escapeHtml(c.name || c.phone_number)}</td>
+                    <td class="p-3 font-mono text-gray-300">+${c.phone_number}</td>
+                    <td class="p-3"><div class="flex flex-wrap gap-1">${stackedBadges}</div></td>
+                    <td class="p-3 text-gray-400 truncate max-w-[200px]" title="${lastMsgText}">${lastMsgText}</td>
+                    <td class="p-3 text-right shrink-0">
+                        <div class="flex items-center justify-end gap-1.5">
+                            <button class="dir-open-chat-btn bg-brand-500/10 hover:bg-brand-500/20 text-brand-400 border border-brand-500/30 px-2 py-1 rounded-lg transition-colors font-medium text-[11px]" data-phone="${c.phone_number}" data-name="${escapeHtml(c.name || '')}" data-label="${escapeHtml(c.label || '')}">💬 Chat</button>
+                            <button class="dir-delete-contact-btn bg-red-500/10 hover:bg-red-500/20 text-red-400 border border-red-500/30 px-2 py-1 rounded-lg transition-colors font-medium text-[11px]" data-phone="${c.phone_number}">🗑️</button>
+                        </div>
+                    </td>
+                `;
+                directoryTableBody.appendChild(row);
+            });
+        }
+
+        openAllContactsModalBtn.addEventListener('click', () => {
+            renderDirectoryTable();
+            allContactsModal.classList.remove('hidden');
+        });
+
+        closeAllContactsModal.addEventListener('click', () => {
+            allContactsModal.classList.add('hidden');
+        });
+
+        directorySearchInput.addEventListener('input', renderDirectoryTable);
+        directoryLabelFilterSelect.addEventListener('change', renderDirectoryTable);
+
+        directoryTableBody.addEventListener('click', (e) => {
+            const openBtn = e.target.closest('.dir-open-chat-btn');
+            const delBtn = e.target.closest('.dir-delete-contact-btn');
+
+            if (openBtn) {
+                const phone = openBtn.dataset.phone;
+                const name = openBtn.dataset.name;
+                const label = openBtn.dataset.label;
+                allContactsModal.classList.add('hidden');
+                openChat(phone, name, label);
+            } else if (delBtn) {
+                const phone = delBtn.dataset.phone;
+                deleteContactByPhone(phone).then(() => {
+                    renderDirectoryTable();
+                });
+            }
+        });
+
+        // New Chat Modal Handlers
+        newChatBtn.addEventListener('click', () => {
+            newChatModal.classList.remove('hidden');
+            newChatInput.focus();
+        });
+
+        cancelNewChat.addEventListener('click', () => {
+            newChatModal.classList.add('hidden');
+            newChatInput.value = '';
+        });
+
+        startNewChat.addEventListener('click', () => {
+            const phone = newChatInput.value.replace(/\D/g, '');
+            if (phone) {
+                newChatModal.classList.add('hidden');
+                newChatInput.value = '';
+                openChat(phone, '+' + phone, null);
+            }
+        });
+
+        // Add Contact Manual Handlers
+        openAddContactModalBtn.addEventListener('click', () => {
+            manualContactName.value = '';
+            manualContactPhone.value = '';
+            manualContactLabelSelect.value = '';
+            addContactModal.classList.remove('hidden');
+            manualContactName.focus();
+        });
+
+        const closeAddContactModal = () => addContactModal.classList.add('hidden');
+        cancelAddContactModal.addEventListener('click', closeAddContactModal);
+        cancelAddContactBtn.addEventListener('click', closeAddContactModal);
+
+        saveManualContactBtn.addEventListener('click', async () => {
+            const name = manualContactName.value.trim();
+            const rawPhone = manualContactPhone.value.trim();
+            const label = manualContactLabelSelect.value || null;
+
+            if (!rawPhone) {
+                alert("Nomor telepon WhatsApp wajib diisi.");
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/contacts/add', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone_number: rawPhone, name, label })
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    closeAddContactModal();
+                    loadContacts();
+                    loadLabels();
+                    openChat(data.phone_number, data.name, data.label);
+                } else {
+                    alert("Gagal menambahkan kontak: " + (data.detail || data.message));
+                }
+            } catch (err) {
+                alert("Terjadi kesalahan saat menyimpan kontak.");
+            }
+        });
+
+        // CSV Import Handlers
+        openCsvModalBtn.addEventListener('click', () => {
+            csvFileInput.value = '';
+            csvImportModal.classList.remove('hidden');
+        });
+
+        const closeCsvModal = () => csvImportModal.classList.add('hidden');
+        cancelCsvModal.addEventListener('click', closeCsvModal);
+        cancelCsvModalBtn.addEventListener('click', closeCsvModal);
+
+        downloadCsvTemplateBtn.addEventListener('click', () => {
+            window.open('/api/contacts/template-csv', '_blank');
+        });
+
+        submitCsvBtn.addEventListener('click', async () => {
+            const file = csvFileInput.files[0];
+            if (!file) {
+                alert("Pilih file CSV terlebih dahulu.");
+                return;
+            }
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            submitCsvBtn.disabled = true;
+            submitCsvBtn.innerHTML = `Memproses...`;
+
+            try {
+                const res = await fetch('/api/contacts/import-csv', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    alert(data.message);
+                    closeCsvModal();
+                    loadContacts();
+                    loadLabels();
+                } else {
+                    alert("Gagal mengunggah CSV: " + (data.message || data.detail));
+                }
+            } catch (err) {
+                alert("Terjadi kesalahan saat mengunggah file CSV.");
+            } finally {
+                submitCsvBtn.disabled = false;
+                submitCsvBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12"></path></svg> Proses Upload CSV`;
+            }
+        });
+
+        // Helper function for Blast Status Date Formatting
+        function isBlastedToday(blastDateStr) {
+            if (!blastDateStr) return false;
+            try {
+                const bDate = new Date(blastDateStr.endsWith('Z') ? blastDateStr : blastDateStr + 'Z');
+                const today = new Date();
+                return bDate.getFullYear() === today.getFullYear() &&
+                       bDate.getMonth() === today.getMonth() &&
+                       bDate.getDate() === today.getDate();
+            } catch (e) {
+                return false;
+            }
+        }
+
+        function formatBlastTime(blastDateStr) {
+            if (!blastDateStr) return '';
+            try {
+                const dateObj = new Date(blastDateStr.endsWith('Z') ? blastDateStr : blastDateStr + 'Z');
+                return dateObj.toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            } catch (e) {
+                return '';
+            }
+        }
+
+        // Blast Modal & UNCHECKED BY DEFAULT Contact Checklist Logic
+        function renderBlastChecklist() {
+            const selectedLabel = blastTargetLabelSelect.value;
+            const selectedStatus = blastStatusFilterSelect ? blastStatusFilterSelect.value : 'ALL';
+            const query = blastSearchInput.value.toLowerCase().trim();
+
+            let filtered = contactsCache;
+
+            // 1. Filter Label
+            if (selectedLabel !== 'ALL') {
+                const targetNorm = selectedLabel.trim().toLowerCase();
+                filtered = filtered.filter(c => {
+                    if (!c.label) return false;
+                    const parts = c.label.split(',').map(p => p.trim().toLowerCase());
+                    return parts.includes(targetNorm);
+                });
+            }
+
+            // 2. Filter Status Blast
+            if (selectedStatus === 'NOT_BLASTED') {
+                filtered = filtered.filter(c => !c.last_blasted_at);
+            } else if (selectedStatus === 'BLASTED_TODAY') {
+                filtered = filtered.filter(c => isBlastedToday(c.last_blasted_at));
+            } else if (selectedStatus === 'BLASTED') {
+                filtered = filtered.filter(c => !!c.last_blasted_at);
+            }
+
+            // 3. Search Query Filter
+            if (query) {
+                filtered = filtered.filter(c =>
+                    (c.name && c.name.toLowerCase().includes(query)) ||
+                    (c.phone_number && c.phone_number.includes(query))
+                );
+            }
+
+            blastContactsChecklist.innerHTML = '';
+
+            if (filtered.length === 0) {
+                blastContactsChecklist.innerHTML = `<div class="text-xs text-gray-500 p-4 text-center">Tidak ada kontak yang cocok dengan filter</div>`;
+                updateBlastCounter();
+                return;
+            }
+
+            // UNCHECKED BY DEFAULT (User must manually select or use quick buttons)
+            filtered.forEach(c => {
+                const item = document.createElement('label');
+                item.className = 'flex items-center justify-between p-2.5 hover:bg-dark-800 rounded-lg cursor-pointer transition-colors text-xs select-none';
+
+                let statusBadgeHtml = '';
+                if (c.last_blasted_at) {
+                    const formattedTime = formatBlastTime(c.last_blasted_at);
+                    statusBadgeHtml = `<span class="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full border bg-emerald-500/10 text-emerald-400 border-emerald-500/30 font-semibold" title="Waktu blast: ${formattedTime}">✓ Di-blast (${formattedTime})</span>`;
+                } else {
+                    statusBadgeHtml = `<span class="inline-flex items-center text-[10px] px-2 py-0.5 rounded-full border bg-amber-500/10 text-amber-400 border-amber-500/30 font-semibold">⚡ Belum Di-blast</span>`;
+                }
+
+                item.innerHTML = `
+                    <div class="flex items-center gap-2.5 min-w-0 pr-2">
+                        <input type="checkbox" value="${c.phone_number}" class="blast-contact-cb w-4 h-4 accent-brand-500 rounded cursor-pointer shrink-0">
+                        <div class="min-w-0">
+                            <p class="font-medium text-white truncate flex items-center gap-1.5">
+                                <span>${escapeHtml(c.name || c.phone_number)}</span>
+                            </p>
+                            <p class="text-[10px] text-gray-400">+${c.phone_number}</p>
+                        </div>
+                    </div>
+                    <div class="shrink-0 flex items-center gap-1.5 flex-wrap justify-end">
+                        ${statusBadgeHtml}
+                        ${renderStackedLabelBadges(c.label)}
+                    </div>
+                `;
+                blastContactsChecklist.appendChild(item);
+            });
+
+            blastSelectAllCheckbox.checked = false;
+            updateBlastCounter();
+        }
+
+        function updateBlastCounter() {
+            const checkboxes = blastContactsChecklist.querySelectorAll('.blast-contact-cb');
+            const checked = blastContactsChecklist.querySelectorAll('.blast-contact-cb:checked');
+            blastSelectedCounter.innerText = `${checked.length}/${checkboxes.length}`;
+        }
+
+        // Quick Select Preset Handlers
+        function selectTopNBlastContacts(n) {
+            const checkboxes = blastContactsChecklist.querySelectorAll('.blast-contact-cb');
+            checkboxes.forEach((cb, idx) => {
+                cb.checked = idx < n;
+            });
+            updateBlastCounter();
+            const total = checkboxes.length;
+            const checked = blastContactsChecklist.querySelectorAll('.blast-contact-cb:checked').length;
+            blastSelectAllCheckbox.checked = total > 0 && total === checked;
+        }
+
+        if (blastSelect25Btn) blastSelect25Btn.addEventListener('click', () => selectTopNBlastContacts(25));
+        if (blastSelect50Btn) blastSelect50Btn.addEventListener('click', () => selectTopNBlastContacts(50));
+        if (blastSelect100Btn) blastSelect100Btn.addEventListener('click', () => selectTopNBlastContacts(100));
+        if (blastSelect250Btn) blastSelect250Btn.addEventListener('click', () => selectTopNBlastContacts(250));
+        if (blastDeselectAllBtn) blastDeselectAllBtn.addEventListener('click', () => selectTopNBlastContacts(0));
+
+        blastContactsChecklist.addEventListener('change', (e) => {
+            if (e.target.classList.contains('blast-contact-cb')) {
+                updateBlastCounter();
+                const total = blastContactsChecklist.querySelectorAll('.blast-contact-cb').length;
+                const checked = blastContactsChecklist.querySelectorAll('.blast-contact-cb:checked').length;
+                blastSelectAllCheckbox.checked = total > 0 && total === checked;
+            }
+        });
+
+        blastSelectAllCheckbox.addEventListener('change', (e) => {
+            const isChecked = e.target.checked;
+            blastContactsChecklist.querySelectorAll('.blast-contact-cb').forEach(cb => {
+                cb.checked = isChecked;
+            });
+            updateBlastCounter();
+        });
+
+        blastTargetLabelSelect.addEventListener('change', renderBlastChecklist);
+        if (blastStatusFilterSelect) blastStatusFilterSelect.addEventListener('change', renderBlastChecklist);
+        blastSearchInput.addEventListener('input', renderBlastChecklist);
+
+        blastBtn.addEventListener('click', () => {
+            renderTemplateOptions();
+            renderLabelSelects();
+            renderBlastChecklist();
+            blastModal.classList.remove('hidden');
+        });
+
+        const closeBlastModal = () => blastModal.classList.add('hidden');
+        cancelBlastModal.addEventListener('click', closeBlastModal);
+        cancelBlastModalBtn.addEventListener('click', closeBlastModal);
+
+        let currentSentToday = 0;
+
+        async function executeSendBlast(payload) {
+            closeBlastModal();
+            if (blastWarningModal) blastWarningModal.classList.add('hidden');
+
+            blastBtn.disabled = true;
+            blastBtn.innerHTML = `Sending...`;
+
+            try {
+                const res = await fetch('/api/blast', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                
+                if (!res.ok) {
+                    const errBody = await res.text();
+                    throw new Error(`Server response ${res.status}: ${errBody}`);
+                }
+
+                const data = await res.json();
+                if (data && data.status === 'success') {
+                    if (typeof data.sent_today !== 'undefined') {
+                        currentSentToday = data.sent_today;
+                    }
+                    alert(data.message || "Blast berhasil dijadwalkan!");
+                    loadStats();
+                    loadContacts();
+                } else {
+                    alert("Gagal mengirim blast: " + (data ? (data.message || data.detail) : "Respon tidak valid"));
+                }
+            } catch (e) {
+                console.error("Error executing blast:", e);
+                alert("Terjadi kesalahan saat mengirim blast: " + (e.message || e));
+            } finally {
+                blastBtn.disabled = false;
+                blastBtn.innerHTML = `<svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5.882V19.24a1.76 1.76 0 01-3.417.592l-2.147-6.15M18 13a3 3 0 100-6M5.436 13.683A4.001 4.001 0 017 6h1.832c4.1 0 7.625-1.234 9.168-3v14c-1.543-1.766-5.067-3-9.168-3H7a3.988 3.988 0 01-1.564-.317z"></path></svg> Trigger Blast (Hari Ini: <span id="limit-text">${currentSentToday}</span> chat)`;
+            }
+        }
+
+        confirmBlastBtn.addEventListener('click', () => {
+            const selectedOpt = blastModalTemplateSelect.options[blastModalTemplateSelect.selectedIndex];
+            if (!selectedOpt || !selectedOpt.value) {
+                alert("Silakan pilih template pesan Meta terlebih dahulu dari dropdown.");
+                return;
+            }
+
+            const templateName = selectedOpt.value;
+            const langCode = selectedOpt.getAttribute('data-lang') || 'id';
+            const headerImageUrl = blastHeaderImgInput.value.trim() || null;
+            const checkedBoxes = blastContactsChecklist.querySelectorAll('.blast-contact-cb:checked');
+            const selectedPhones = Array.from(checkedBoxes).map(cb => cb.value);
+
+            if (selectedPhones.length === 0) {
+                alert("Pilih minimal 1 kontak target untuk dikirimkan blast.");
+                return;
+            }
+
+            const payload = {
+                template_name: templateName,
+                language_code: langCode,
+                header_image_url: headerImageUrl,
+                selected_phones: selectedPhones
+            };
+
+            if (selectedPhones.length > 250) {
+                pendingBlastPayload = payload;
+                if (warningSelectedCount) warningSelectedCount.innerText = selectedPhones.length;
+                if (blastWarningModal) blastWarningModal.classList.remove('hidden');
+            } else {
+                executeSendBlast(payload);
+            }
+        });
+
+        if (cancelWarningBtn) {
+            cancelWarningBtn.addEventListener('click', () => {
+                pendingBlastPayload = null;
+                if (blastWarningModal) blastWarningModal.classList.add('hidden');
+            });
+        }
+
+        if (proceedWarningBtn) {
+            proceedWarningBtn.addEventListener('click', () => {
+                if (pendingBlastPayload) {
+                    executeSendBlast(pendingBlastPayload);
+                    pendingBlastPayload = null;
+                }
+            });
+        }
+
+        // Delete Contact Handler
+        async function deleteContactByPhone(phone) {
+            if (!phone) return;
+            if (confirm(`Apakah Anda yakin ingin menghapus kontak ${phone} dari database?`)) {
+                try {
+                    const res = await fetch(`/api/contacts/${phone}`, { method: 'DELETE' });
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        if (activeContact === phone) {
+                            closeActiveChat();
+                        }
+                        loadContacts();
+                        loadLabels();
+                    } else {
+                        alert("Gagal menghapus kontak: " + (data.detail || data.message));
+                    }
+                } catch (err) {
+                    alert("Terjadi kesalahan saat menghapus kontak.");
+                }
+            }
+        }
+
+        deleteContactBtn.addEventListener('click', () => {
+            if (activeContact) {
+                deleteContactByPhone(activeContact);
+            }
+        });
+
+        // Close Active Chat Window (Reset to empty view)
+        function closeActiveChat() {
+            activeContact = null;
+            lastRenderedDateStr = null;
+            document.querySelectorAll('.contact-item').forEach(el => el.classList.remove('bg-dark-800'));
+            chatHeaderEl.classList.add('hidden');
+            chatMessagesEl.classList.add('hidden');
+            chatFooterEl.classList.add('hidden');
+            chatEmptyEl.classList.remove('hidden');
+        }
+
+        closeChatBtn.addEventListener('click', closeActiveChat);
+
+        // Keyboard Shortcut Handler (ESC Key)
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                if (!allContactsModal.classList.contains('hidden')) {
+                    allContactsModal.classList.add('hidden');
+                    return;
+                }
+                if (!newChatModal.classList.contains('hidden')) {
+                    newChatModal.classList.add('hidden');
+                    return;
+                }
+                if (!manageTemplatesModal.classList.contains('hidden')) {
+                    manageTemplatesModal.classList.add('hidden');
+                    return;
+                }
+                if (!manageLabelsModal.classList.contains('hidden')) {
+                    manageLabelsModal.classList.add('hidden');
+                    return;
+                }
+                if (!csvImportModal.classList.contains('hidden')) {
+                    csvImportModal.classList.add('hidden');
+                    return;
+                }
+                if (!addContactModal.classList.contains('hidden')) {
+                    addContactModal.classList.add('hidden');
+                    return;
+                }
+                if (!blastModal.classList.contains('hidden')) {
+                    blastModal.classList.add('hidden');
+                    return;
+                }
+                if (activeContact) {
+                    closeActiveChat();
+                }
+            }
+        });
+
+        // Load Real-Time Analytics Counter
+        async function loadStats() {
+            try {
+                const res = await fetch('/api/chat/stats');
+                const stats = await res.json();
+                statSent.innerText = stats.sent || 0;
+                statDelivered.innerText = stats.delivered || 0;
+                statRead.innerText = stats.read || 0;
+                statFailed.innerText = stats.failed || 0;
+                if (typeof stats.sent_today !== 'undefined') {
+                    currentSentToday = stats.sent_today;
+                    const limitEl = document.getElementById('limit-text');
+                    if (limitEl) limitEl.innerText = stats.sent_today;
+                }
+            } catch (err) {
+                console.error("Failed to load chat stats", err);
+            }
+        }
+
+        const searchInput = document.getElementById('search-input');
+
+        // Render Contacts List with Search Filter & Stacked Badges
+        function renderContactsList(contactsToRender) {
+            contactsListEl.innerHTML = '';
+            topNavContactsCount.innerText = contactsCache.length;
+
+            if (contactsToRender.length === 0) {
+                contactsListEl.innerHTML = `<div class="p-6 text-center text-xs text-gray-500">Tidak ada kontak ditemukan</div>`;
+                return;
+            }
+
+            contactsToRender.forEach(contact => {
+                const el = document.createElement('div');
+                el.className = `p-3 border-b border-dark-700 cursor-pointer hover:bg-dark-800 transition-colors flex items-center gap-3 contact-item group relative ${activeContact === contact.phone_number ? 'bg-dark-800' : ''}`;
+                el.dataset.phone = contact.phone_number;
+
+                const time = contact.last_message_at ? new Date(contact.last_message_at + 'Z').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                const stackedBadgesHtml = renderStackedLabelBadges(contact.label);
+                const unreadCount = contact.unread_count || 0;
+
+                const lastMsgSnippet = contact.last_message ? escapeHtml(contact.last_message) : `+${contact.phone_number}`;
+                const unreadBadgeHtml = unreadCount > 0
+                    ? `<span class="bg-brand-500 text-dark-900 font-bold text-[11px] px-2 py-0.5 rounded-full min-w-[20px] text-center shadow">${unreadCount}</span>`
+                    : '';
+                const timeColorClass = unreadCount > 0 ? 'text-brand-500 font-semibold' : 'text-gray-500';
+
+                el.innerHTML = `
+                    <div class="w-12 h-12 rounded-full bg-dark-700 flex-shrink-0 flex items-center justify-center text-gray-400 relative">
+                        <svg class="w-7 h-7" fill="currentColor" viewBox="0 0 20 20"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd"></path></svg>
+                    </div>
+                    <div class="flex-grow min-w-0 pr-6">
+                        <div class="flex justify-between items-baseline mb-1">
+                            <h3 class="font-medium text-white truncate flex items-center gap-1.5 flex-wrap">
+                                <span>${escapeHtml(contact.name || contact.phone_number)}</span>
+                                ${stackedBadgesHtml}
+                            </h3>
+                            <span class="text-xs ${timeColorClass} flex-shrink-0 ml-2">${time}</span>
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <p class="text-xs ${unreadCount > 0 ? 'text-gray-200 font-medium' : 'text-gray-400'} truncate pr-2">${lastMsgSnippet}</p>
+                            ${unreadBadgeHtml}
+                        </div>
+                    </div>
+                    <button class="delete-item-btn hidden group-hover:block absolute right-3 top-1/2 -translate-y-1/2 p-1.5 bg-dark-900/90 text-gray-400 hover:text-red-400 rounded-lg border border-dark-700 transition-all shadow" title="Hapus Kontak">
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"></path></svg>
+                    </button>
+                `;
+
+                el.addEventListener('click', (e) => {
+                    if (e.target.closest('.delete-item-btn')) {
+                        e.stopPropagation();
+                        deleteContactByPhone(contact.phone_number);
+                        return;
+                    }
+                    openChat(contact.phone_number, contact.name, contact.label);
+                });
+                contactsListEl.appendChild(el);
+            });
+        }
+
+        // Real-Time Search Filter Event Listener
+        if (searchInput) {
+            searchInput.addEventListener('input', (e) => {
+                const query = e.target.value.toLowerCase().trim();
+                if (!query) {
+                    renderContactsList(contactsCache);
+                    return;
+                }
+                const filtered = contactsCache.filter(c =>
+                    (c.name && c.name.toLowerCase().includes(query)) ||
+                    (c.phone_number && c.phone_number.includes(query)) ||
+                    (c.label && c.label.toLowerCase().includes(query)) ||
+                    (c.last_message && c.last_message.toLowerCase().includes(query))
+                );
+                renderContactsList(filtered);
+            });
+        }
+
+        // Fetch and render contacts
+        async function loadContacts() {
+            try {
+                const res = await fetch('/api/chat/contacts');
+                const contacts = await res.json();
+                contactsCache = contacts;
+
+                const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+                if (query) {
+                    const filtered = contactsCache.filter(c =>
+                        (c.name && c.name.toLowerCase().includes(query)) ||
+                        (c.phone_number && c.phone_number.includes(query)) ||
+                        (c.label && c.label.toLowerCase().includes(query)) ||
+                        (c.last_message && c.last_message.toLowerCase().includes(query))
+                    );
+                    renderContactsList(filtered);
+                } else {
+                    renderContactsList(contactsCache);
+                }
+
+                if (activeContact) {
+                    const current = contactsCache.find(c => c.phone_number === activeContact);
+                    if (current) {
+                        updateHeaderLabelBadge(current.label);
+                    }
+                }
+            } catch (err) {
+                console.error("Failed to load contacts", err);
+            }
+        }
+
+        // Add New Global Label from Kelola Label Modal
+        const newGlobalLabelInput = document.getElementById('new-global-label-input');
+        const addGlobalLabelBtn = document.getElementById('add-global-label-btn');
+
+        if (addGlobalLabelBtn) {
+            addGlobalLabelBtn.addEventListener('click', async () => {
+                const name = newGlobalLabelInput.value.trim();
+                if (!name) {
+                    alert("Nama label tidak boleh kosong.");
+                    return;
+                }
+
+                try {
+                    const res = await fetch('/api/labels/add', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ label_name: name })
+                    });
+                    const data = await res.json();
+                    if (data.status === 'success') {
+                        newGlobalLabelInput.value = '';
+                        await loadLabels();
+                        renderManageLabelsList();
+                        loadContacts();
+                    } else {
+                        alert("Gagal menambahkan label: " + (data.detail || data.message));
+                    }
+                } catch (err) {
+                    alert("Terjadi kesalahan saat menambahkan label.");
+                }
+            });
+        }
+
+        // Update Active Contact Labels (Select from existing global labels)
+        labelSelect.addEventListener('change', async () => {
+            if (!activeContact) return;
+            let selectedLabel = labelSelect.value;
+            if (!selectedLabel) return;
+
+            if (selectedLabel === '__MANAGE_LABELS__') {
+                labelSelect.value = '';
+                renderManageLabelsList();
+                manageLabelsModal.classList.remove('hidden');
+                return;
+            }
+
+            const contact = contactsCache.find(c => c.phone_number === activeContact);
+            let currentLabels = contact && contact.label ? contact.label.split(',').map(s => s.trim()).filter(Boolean) : [];
+
+            if (!currentLabels.some(l => l.toLowerCase() === selectedLabel.toLowerCase())) {
+                currentLabels.push(selectedLabel);
+            }
+
+            const newLabelStr = currentLabels.join(', ');
+
+            try {
+                await fetch('/api/chat/contacts/label', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone_number: activeContact, label: newLabelStr })
+                });
+
+                if (contact) contact.label = newLabelStr;
+                updateHeaderLabelBadge(newLabelStr);
+                await loadLabels();
+                loadContacts();
+            } catch (err) {
+                console.error("Failed to add label tag", err);
+            } finally {
+                labelSelect.value = '';
+            }
+        });
+
+        // Remove Label Tag Handler from Active Chat Header
+        activeChatLabelBadges.addEventListener('click', async (e) => {
+            const removeBtn = e.target.closest('.remove-label-tag-btn');
+            if (!removeBtn || !activeContact) return;
+
+            const labelToRemove = removeBtn.dataset.label;
+            const contact = contactsCache.find(c => c.phone_number === activeContact);
+            if (!contact || !contact.label) return;
+
+            let currentLabels = contact.label.split(',').map(s => s.trim()).filter(Boolean);
+            currentLabels = currentLabels.filter(l => l.toLowerCase() !== labelToRemove.toLowerCase());
+
+            const newLabelStr = currentLabels.length > 0 ? currentLabels.join(', ') : null;
+
+            try {
+                await fetch('/api/chat/contacts/label', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone_number: activeContact, label: newLabelStr })
+                });
+
+                contact.label = newLabelStr;
+                updateHeaderLabelBadge(newLabelStr);
+                await loadLabels();
+                loadContacts();
+            } catch (err) {
+                console.error("Failed to remove label tag", err);
+            }
+        });
+
+        function updateHeaderLabelBadge(labelStr) {
+            activeChatLabelBadges.innerHTML = renderStackedLabelBadges(labelStr, true);
+        }
+
+        // Open Chat Window
+        async function openChat(phone, name, label) {
+            activeContact = phone;
+
+            // Mark read locally and on server
+            const cachedContact = contactsCache.find(c => c.phone_number === phone);
+            if (cachedContact && cachedContact.unread_count > 0) {
+                cachedContact.unread_count = 0;
+                const query = searchInput ? searchInput.value.toLowerCase().trim() : '';
+                renderContactsList(query ? contactsCache.filter(c => (c.name && c.name.toLowerCase().includes(query)) || (c.phone_number && c.phone_number.includes(query)) || (c.last_message && c.last_message.toLowerCase().includes(query))) : contactsCache);
+
+                fetch(`/api/chat/read/${phone}`, { method: 'POST' }).catch(err => console.error(err));
+            }
+
+            document.querySelectorAll('.contact-item').forEach(el => el.classList.remove('bg-dark-800'));
+            const activeEl = document.querySelector(`.contact-item[data-phone="${phone}"]`);
+            if (activeEl) activeEl.classList.add('bg-dark-800');
+
+            chatEmptyEl.classList.add('hidden');
+            chatHeaderEl.classList.remove('hidden');
+            chatHeaderEl.classList.add('flex');
+            chatMessagesEl.classList.remove('hidden');
+            chatMessagesEl.classList.add('flex');
+            chatFooterEl.classList.remove('hidden');
+            chatFooterEl.classList.add('flex');
+
+            activeChatNameEl.innerText = name || phone;
+            activeChatPhoneEl.innerText = `+${phone}`;
+            updateHeaderLabelBadge(label);
+
+            try {
+                const res = await fetch(`/api/chat/history/${phone}`);
+                const messages = await res.json();
+
+                chatMessagesEl.innerHTML = '';
+                lastRenderedDateStr = null;
+                messages.forEach(msg => appendMessage(msg));
+                scrollToBottom();
+            } catch (err) {
+                console.error("Failed to load chat history", err);
+            }
+        }
+
+
+        function getStatusIconHTML(status, error) {
+            if (status === 'delivered') {
+                return `<span title="Delivered (Diterima)" class="text-emerald-200/90 font-bold ml-1 text-xs select-none">✓✓</span>`;
+            } else if (status === 'read') {
+                return `<span title="Read (Dibaca)" class="text-sky-300 font-bold ml-1 text-xs select-none drop-shadow-[0_0_3px_rgba(56,189,248,0.6)]">✓✓</span>`;
+            } else if (status === 'failed') {
+                const errorMsg = error ? `Gagal Terkirim: ${error}` : 'Gagal terkirim oleh WhatsApp Meta API';
+                return `<span title="${escapeHtml(errorMsg)}" class="text-red-400 font-bold ml-1 text-xs select-none cursor-help">❗</span>`;
+            } else {
+                return `<span title="Sent (Terkirim ke Server Meta)" class="text-emerald-200/70 font-bold ml-1 text-xs select-none">✓</span>`;
+            }
+        }
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        let lastRenderedDateStr = null;
+
+        function parseMsgDate(timestamp) {
+            if (!timestamp) return new Date();
+            if (timestamp instanceof Date) return timestamp;
+            const tsStr = String(timestamp);
+            const normalized = tsStr.endsWith('Z') || tsStr.includes('+') ? tsStr : tsStr + 'Z';
+            const d = new Date(normalized);
+            return isNaN(d.getTime()) ? new Date() : d;
+        }
+
+        function formatDateSeparator(dateObj) {
+            if (!dateObj || isNaN(dateObj.getTime())) return '';
+
+            const now = new Date();
+            const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+            const yesterday = new Date(today);
+            yesterday.setDate(yesterday.getDate() - 1);
+
+            const msgDate = new Date(dateObj.getFullYear(), dateObj.getMonth(), dateObj.getDate());
+
+            const diffTime = today.getTime() - msgDate.getTime();
+            const diffDays = Math.round(diffTime / (1000 * 3600 * 24));
+
+            if (diffDays === 0) {
+                return 'Today';
+            } else if (diffDays === 1) {
+                return 'Yesterday';
+            } else if (diffDays > 1 && diffDays < 7) {
+                const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+                return days[dateObj.getDay()];
+            } else {
+                const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+                return `${dateObj.getDate()} ${months[dateObj.getMonth()]} ${dateObj.getFullYear()}`;
+            }
+        }
+
+        function appendDateSeparator(dateObj) {
+            const label = formatDateSeparator(dateObj);
+            if (!label) return;
+
+            const div = document.createElement('div');
+            div.className = 'flex items-center justify-center my-3 w-full date-divider select-none';
+            div.innerHTML = `
+                <span class="bg-dark-800/90 text-gray-300 text-[11px] font-semibold px-3 py-1 rounded-lg border border-dark-700 shadow-sm backdrop-blur-sm select-none">
+                    ${label}
+                </span>
+            `;
+            chatMessagesEl.appendChild(div);
+        }
+
+        function renderMessageContent(msg) {
+            const msgType = msg.msg_type || 'text';
+            const textHtml = msg.text ? `<p class="text-sm whitespace-pre-wrap break-words leading-relaxed">${escapeHtml(msg.text)}</p>` : '';
+
+            if (msgType === 'image') {
+                return `
+                    ${msg.media_url ? `<div class="rounded-xl overflow-hidden my-1 max-w-xs cursor-pointer border border-dark-700/80 bg-dark-900/40 shadow-inner group/img"><img src="${msg.media_url}" alt="Image" class="w-full h-auto object-cover max-h-64 rounded-xl group-hover/img:scale-[1.02] transition-transform duration-200" onclick="window.open('${msg.media_url}', '_blank')"/></div>` : ''}
+                    ${textHtml}
+                `;
+            } else if (msgType === 'sticker') {
+                return `
+                    ${msg.media_url ? `<div class="my-1 max-w-[160px] p-1 bg-transparent"><img src="${msg.media_url}" alt="Sticker" class="w-32 h-32 object-contain filter drop-shadow-md hover:scale-105 transition-transform"/></div>` : '<span class="text-xs italic text-gray-400">[Sticker]</span>'}
+                `;
+            } else if (msgType === 'document') {
+                return `
+                    ${msg.media_url ? `
+                        <a href="${msg.media_url}" target="_blank" class="flex items-center gap-3 p-3 bg-dark-900/60 hover:bg-dark-900 rounded-xl border border-dark-700/80 transition-colors my-1 group/doc">
+                            <div class="w-10 h-10 rounded-lg bg-brand-500/10 text-brand-500 flex items-center justify-center font-bold text-xs uppercase shrink-0">
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 21h10a2 2 0 002-2V9.414a1 1 0 00-.293-.707l-5.414-5.414A1 1 0 0012.586 3H7a2 2 0 00-2 2v14a2 2 0 002 2z"></path></svg>
+                            </div>
+                            <div class="flex-grow min-w-0">
+                                <p class="text-xs font-semibold text-gray-200 truncate group-hover/doc:text-brand-500">${escapeHtml(msg.text || 'Document')}</p>
+                                <span class="text-[10px] text-gray-400">Klik untuk melihat file</span>
+                            </div>
+                        </a>
+                    ` : textHtml}
+                `;
+            } else {
+                return textHtml;
+            }
+        }
+
+        function appendMessage(msg) {
+            const msgDate = parseMsgDate(msg.timestamp);
+            const dateKey = `${msgDate.getFullYear()}-${msgDate.getMonth()}-${msgDate.getDate()}`;
+
+            if (dateKey !== lastRenderedDateStr) {
+                appendDateSeparator(msgDate);
+                lastRenderedDateStr = dateKey;
+            }
+
+            const isOutbound = msg.direction === 'outbound';
+            const timeStr = msgDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+            const statusHTML = isOutbound ? getStatusIconHTML(msg.status || 'sent', msg.error) : '';
+
+            const div = document.createElement('div');
+            div.className = `flex flex-col ${isOutbound ? 'items-end' : 'items-start'} max-w-full msg-item my-1`;
+            if (isOutbound) {
+                div.dataset.outboundMsg = "true";
+            }
+
+            const bubbleBg = isOutbound
+                ? 'bg-gradient-to-r from-emerald-700 to-teal-600 text-white rounded-tr-xs border border-emerald-500/30 shadow-md shadow-emerald-950/20'
+                : 'bg-dark-800/95 text-gray-100 rounded-tl-xs border border-dark-700/80 shadow-md shadow-black/20';
+
+            div.innerHTML = `
+                <div class="${bubbleBg} rounded-2xl px-3.5 pt-2 pb-5 min-w-[130px] max-w-[85%] sm:max-w-[75%] relative group backdrop-blur-sm transition-all">
+                    ${renderMessageContent(msg)}
+                    <span class="text-[10px] ${isOutbound ? 'text-emerald-100/80' : 'text-gray-400'} absolute bottom-1 right-2.5 flex items-center gap-1 font-medium select-none">
+                        ${timeStr}
+                        ${isOutbound ? `<span class="status-icon-container flex items-center">${statusHTML}</span>` : ''}
+                    </span>
+                </div>
+            `;
+            chatMessagesEl.appendChild(div);
+        }
+
+        function scrollToBottom() {
+            chatMessagesEl.scrollTop = chatMessagesEl.scrollHeight;
+        }
+
+        // Send Text Message
+        async function sendMessage() {
+            if (!activeContact) return;
+            const text = chatInput.value.trim();
+            if (!text) return;
+
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+
+            const newMsg = { direction: 'outbound', text: text, msg_type: 'text', status: 'sent', timestamp: new Date().toISOString() };
+            appendMessage(newMsg);
+            scrollToBottom();
+
+            try {
+                await fetch('/api/chat/send', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone_number: activeContact, message: text })
+                });
+                loadContacts();
+                loadStats();
+            } catch (err) {
+                console.error("Failed to send message", err);
+            }
+        }
+
+        chatInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter' && !e.shiftKey) {
+                e.preventDefault();
+                sendMessage();
+            }
+        });
+
+        chatInput.addEventListener('input', () => {
+            chatInput.style.height = 'auto';
+            chatInput.style.height = Math.min(chatInput.scrollHeight, 128) + 'px';
+        });
+
+        attachBtn.addEventListener('click', () => {
+            if (!activeContact) {
+                alert("Pilih kontak terlebih dahulu.");
+                return;
+            }
+            mediaFileInput.click();
+        });
+
+        mediaFileInput.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file || !activeContact) return;
+
+            const formData = new FormData();
+            formData.append('phone_number', activeContact);
+
+            let mediaType = 'image';
+            if (file.type.startsWith('image/')) {
+                mediaType = 'image';
+            } else {
+                mediaType = 'document';
+            }
+            formData.append('media_type', mediaType);
+            formData.append('file', file);
+            formData.append('caption', chatInput.value.trim() || file.name);
+
+            chatInput.value = '';
+            chatInput.style.height = 'auto';
+
+            const tempUrl = URL.createObjectURL(file);
+            const tempMsg = {
+                direction: 'outbound',
+                text: file.name,
+                msg_type: mediaType,
+                media_url: tempUrl,
+                status: 'sent',
+                timestamp: new Date().toISOString()
+            };
+            appendMessage(tempMsg);
+            scrollToBottom();
+
+            try {
+                const res = await fetch('/api/chat/send-media-file', {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await res.json();
+                if (data.status === 'success') {
+                    loadContacts();
+                    loadStats();
+                } else {
+                    alert("Gagal mengirim media: " + (data.detail || "Error tidak diketahui"));
+                }
+            } catch (err) {
+                console.error("Failed to upload media file", err);
+                alert("Terjadi kesalahan saat mengirim berkas.");
+            } finally {
+                mediaFileInput.value = '';
+            }
+        });
+
+        chatSendBtn.addEventListener('click', sendMessage);
+
+        // WebSocket Integration
+        const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+        const ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws/dashboard`);
+
+        ws.onopen = () => {
+            socketStatus.classList.replace('bg-red-500', 'bg-brand-500');
+        };
+        ws.onclose = () => {
+            socketStatus.classList.replace('bg-brand-500', 'bg-red-500');
+        };
+
+        ws.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            if (data.type === 'incoming_message') {
+                if (activeContact === data.phone_number) {
+                    appendMessage({
+                        direction: 'inbound',
+                        text: data.text,
+                        msg_type: data.msg_type || 'text',
+                        media_url: data.media_url,
+                        timestamp: data.timestamp
+                    });
+                    scrollToBottom();
+                }
+                loadContacts();
+                loadStats();
+            } else if (data.type === 'message_status_update') {
+                if (activeContact === data.phone_number) {
+                    const outboundMsgs = chatMessagesEl.querySelectorAll('.msg-item[data-outbound-msg="true"]');
+                    if (outboundMsgs.length > 0) {
+                        const lastMsgEl = outboundMsgs[outboundMsgs.length - 1];
+                        const statusContainer = lastMsgEl.querySelector('.status-icon-container');
+                        if (statusContainer) {
+                            statusContainer.innerHTML = getStatusIconHTML(data.status, data.error);
+                        }
+                    }
+                }
+                loadStats();
+            }
+        };
+
+        // Initial Load
+        renderTemplateOptions();
+        loadLabels();
+        loadContacts();
+        loadStats();
+    </script>
+</body>
+
+</html>
