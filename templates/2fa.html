@@ -1,0 +1,434 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Verifikasi 2FA - WA-CDM Omnichannel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.5;
+            z-index: 0;
+            animation: float 10s infinite ease-in-out alternate;
+        }
+        .orb-1 {
+            width: 350px;
+            height: 350px;
+            background: #10b981;
+            top: 10%;
+            right: 15%;
+        }
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            background: #6366f1;
+            bottom: 10%;
+            left: 15%;
+            animation-delay: -5s;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(30px, 30px) scale(1.1); }
+        }
+
+        .fa-card {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 440px;
+            background: rgba(30, 41, 59, 0.75);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.6s ease-out;
+            text-align: center;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .icon-badge {
+            width: 72px;
+            height: 72px;
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            border-radius: 20px;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            color: #10b981;
+            font-size: 32px;
+            margin-bottom: 20px;
+            box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.2);
+        }
+
+        .card-title {
+            color: #ffffff;
+            font-size: 22px;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .card-desc {
+            color: #94a3b8;
+            font-size: 14px;
+            line-height: 1.5;
+            margin-bottom: 24px;
+        }
+
+        .otp-inputs {
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-bottom: 24px;
+        }
+
+        .otp-digit {
+            width: 48px;
+            height: 58px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: 700;
+            text-align: center;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .otp-digit:focus {
+            border-color: #10b981;
+            box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+            background: rgba(15, 23, 42, 0.95);
+        }
+
+        .timer-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            color: #cbd5e1;
+            font-size: 13px;
+            background: rgba(15, 23, 42, 0.5);
+            padding: 8px 16px;
+            border-radius: 20px;
+            margin-bottom: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .timer-badge strong {
+            color: #10b981;
+        }
+
+        .alert-box {
+            display: none;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            margin-bottom: 20px;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+
+        .alert-success {
+            background: rgba(16, 185, 129, 0.15);
+            border: 1px solid rgba(16, 185, 129, 0.3);
+            color: #6ee7b7;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            border: none;
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 20px -5px rgba(16, 185, 129, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -5px rgba(16, 185, 129, 0.6);
+        }
+
+        .resend-box {
+            margin-top: 20px;
+            color: #94a3b8;
+            font-size: 13px;
+        }
+
+        .resend-btn {
+            color: #38bdf8;
+            background: none;
+            border: none;
+            font-weight: 600;
+            cursor: pointer;
+            text-decoration: underline;
+            padding: 0;
+            margin-left: 4px;
+        }
+
+        .resend-btn:disabled {
+            color: #64748b;
+            cursor: not-allowed;
+            text-decoration: none;
+        }
+
+        .back-link {
+            display: inline-block;
+            margin-top: 16px;
+            color: #64748b;
+            font-size: 13px;
+            text-decoration: none;
+            transition: color 0.3s;
+        }
+        .back-link:hover {
+            color: #cbd5e1;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+    </style>
+</head>
+<body>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <div class="fa-card">
+        <div class="icon-badge">
+            <i class="fa-solid fa-shield-halved"></i>
+        </div>
+
+        <h1 class="card-title">Verifikasi 2FA</h1>
+        <p class="card-desc" id="statusDesc">
+            Kode 6-digit OTP telah dikirimkan ke WhatsApp Anda. Silakan masukkan kode tersebut di bawah ini.
+        </p>
+
+        <div id="alertBox" class="alert-box alert-error">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span id="alertMessage">Kode OTP tidak valid</span>
+        </div>
+
+        <form id="faForm" onsubmit="handleVerify(event)">
+            <div class="otp-inputs" id="otpGroup">
+                <input type="text" maxlength="1" class="otp-digit" pattern="[0-9]" inputmode="numeric" autofocus>
+                <input type="text" maxlength="1" class="otp-digit" pattern="[0-9]" inputmode="numeric">
+                <input type="text" maxlength="1" class="otp-digit" pattern="[0-9]" inputmode="numeric">
+                <input type="text" maxlength="1" class="otp-digit" pattern="[0-9]" inputmode="numeric">
+                <input type="text" maxlength="1" class="otp-digit" pattern="[0-9]" inputmode="numeric">
+                <input type="text" maxlength="1" class="otp-digit" pattern="[0-9]" inputmode="numeric">
+            </div>
+
+            <div class="timer-badge">
+                <i class="fa-regular fa-clock"></i>
+                <span>Kadaluarsa dalam <strong id="timerText">05:00</strong></span>
+            </div>
+
+            <button type="submit" id="btnSubmit" class="btn-submit">
+                <span>Verifikasi & Masuk Dashboard</span>
+                <div id="spinner" class="spinner"></div>
+            </button>
+        </form>
+
+        <div class="resend-box">
+            Belum menerima kode?
+            <button id="resendBtn" class="resend-btn" onclick="handleResend()">Kirim Ulang OTP</button>
+        </div>
+
+        <a href="/login" class="back-link">
+            <i class="fa-solid fa-arrow-left"></i> Kembali ke Halaman Login
+        </a>
+    </div>
+
+    <script>
+        const preToken = sessionStorage.getItem('pre_2fa_token');
+        const customMsg = sessionStorage.getItem('2fa_message');
+
+        if (!preToken) {
+            window.location.href = '/login';
+        }
+
+        if (customMsg) {
+            document.getElementById('statusDesc').textContent = customMsg;
+        }
+
+        // OTP inputs auto-advance logic
+        const digits = document.querySelectorAll('.otp-digit');
+        digits.forEach((digit, index) => {
+            digit.addEventListener('input', (e) => {
+                if (e.target.value.length === 1) {
+                    if (index < digits.length - 1) {
+                        digits[index + 1].focus();
+                    }
+                }
+            });
+
+            digit.addEventListener('keydown', (e) => {
+                if (e.key === 'Backspace' && !e.target.value && index > 0) {
+                    digits[index - 1].focus();
+                }
+            });
+
+            // Handle Paste full OTP
+            digit.addEventListener('paste', (e) => {
+                e.preventDefault();
+                const pasteData = (e.clipboardData || window.clipboardData).getData('text').trim();
+                if (/^\d{6}$/.test(pasteData)) {
+                    pasteData.split('').forEach((char, i) => {
+                        if (digits[i]) digits[i].value = char;
+                    });
+                    digits[5].focus();
+                }
+            });
+        });
+
+        // 5-Minute Timer Countdown
+        let timeLeft = 300;
+        const timerText = document.getElementById('timerText');
+        const timerInterval = setInterval(() => {
+            timeLeft--;
+            const mins = Math.floor(timeLeft / 60).toString().padStart(2, '0');
+            const secs = (timeLeft % 60).toString().padStart(2, '0');
+            timerText.textContent = `${mins}:${secs}`;
+
+            if (timeLeft <= 0) {
+                clearInterval(timerInterval);
+                timerText.textContent = 'Kadaluarsa';
+                showAlert('Kode OTP telah kadaluarsa. Silakan klik Kirim Ulang OTP.', 'error');
+            }
+        }, 1000);
+
+        function showAlert(msg, type = 'error') {
+            const alertBox = document.getElementById('alertBox');
+            const alertMessage = document.getElementById('alertMessage');
+            alertBox.className = `alert-box alert-${type}`;
+            alertMessage.textContent = msg;
+            alertBox.style.display = 'flex';
+        }
+
+        async function handleVerify(e) {
+            e.preventDefault();
+            const btnSubmit = document.getElementById('btnSubmit');
+            const spinner = document.getElementById('spinner');
+
+            let code = '';
+            digits.forEach(d => code += d.value);
+
+            if (code.length !== 6) {
+                showAlert('Masukkan 6-digit kode OTP lengkap.', 'error');
+                return;
+            }
+
+            btnSubmit.disabled = true;
+            spinner.style.display = 'block';
+
+            try {
+                const response = await fetch('/api/auth/2fa/verify', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        pre_2fa_token: preToken,
+                        code: code
+                    })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.status === 'success') {
+                    showAlert('Verifikasi Berhasil! Mengalihkan...', 'success');
+                    sessionStorage.removeItem('pre_2fa_token');
+                    setTimeout(() => {
+                        window.location.href = '/';
+                    }, 800);
+                } else {
+                    showAlert(data.detail || 'Kode 2FA tidak valid', 'error');
+                }
+            } catch (err) {
+                showAlert('Gagal terhubung ke server.', 'error');
+            } finally {
+                btnSubmit.disabled = false;
+                spinner.style.display = 'none';
+            }
+        }
+
+        async function handleResend() {
+            const resendBtn = document.getElementById('resendBtn');
+            resendBtn.disabled = true;
+            resendBtn.textContent = 'Mengirim...';
+
+            try {
+                const response = await fetch('/api/auth/2fa/resend', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ pre_2fa_token: preToken })
+                });
+                const data = await response.json();
+                if (response.ok) {
+                    showAlert('Kode OTP baru telah dikirimkan ke WhatsApp Anda.', 'success');
+                    timeLeft = 300;
+                } else {
+                    showAlert(data.detail || 'Gagal mengirim ulang OTP.', 'error');
+                }
+            } catch (err) {
+                showAlert('Kesalahan koneksi saat mengirim ulang.', 'error');
+            } finally {
+                setTimeout(() => {
+                    resendBtn.disabled = false;
+                    resendBtn.textContent = 'Kirim Ulang OTP';
+                }, 10000);
+            }
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,54 @@
+====================================================================
+           RENCANA PROJECT: AUTENTIKASI 2 LAPIS (LOGIN & 2FA)
+                  & MANAJEMEN SUB-ADMIN WA-CDM
+====================================================================
+
+Tujuan:
+Membuat sistem Login 2 Lapis (2FA WA OTP & TOTP), Fitur Multi-User (Super Admin & Sub Admin),
+Pengaturan Dinamis Durasi Akses Sesi (8h, 12h, 24h, 7d), Kustomisasi Nomor WA 2FA per User,
+serta Remote Kill-Switch via WhatsApp (`/logout_all`).
+
+--------------------------------------------------------------------
+1. SKEMA KEAMANAN & ROLE WORKFLOW
+--------------------------------------------------------------------
+A. Role User & Hak Akses
+   - Super Admin (`superadmin`): Memiliki akses penuh, dapat mengelola Sub-Admin
+     (tambah/edit/hapus/ganti password/set durasi akses/ganti nomor WA 2FA).
+   - Sub Admin (`subadmin`): Dapat login dengan akun tersendiri, menerima 2FA di nomor WA
+     masing-masing, namun tidak dapat mengelola akun admin lain.
+
+B. Setup Durasi Akses Sesi (Session Duration Setup)
+   - Default sistem di `.env`: `SESSION_EXPIRE_HOURS=24` (24 Jam).
+   - Pengaturan Dinamis di UI: Super Admin dapat menentukan durasi akses per user
+     (pilihan: 8 Jam Kerja, 12 Jam, 24 Jam, atau 7 Hari).
+
+C. Kustomisasi Nomor WA 2FA
+   - Setiap user memiliki kolom `wa_number` di database.
+   - User dapat mengubah nomor WA 2FA milik sendiri di menu 'Akun & 2FA -> Profil'.
+   - Super Admin juga dapat mengubah nomor WA 2FA milik Sub-Admin mana pun.
+
+
+--------------------------------------------------------------------
+2. RENCANA PERUBAHAN BERKAS
+--------------------------------------------------------------------
+- db/models.py
+  * Tambahkan kolom `role` (superadmin / subadmin) dan `session_expire_hours` pada model `User`.
+
+- api/auth.py
+  * Endpoint CRUD User Sub-Admin:
+    - GET /api/auth/users (Daftar User)
+    - POST /api/auth/users (Tambah Sub Admin)
+    - PUT /api/auth/users/{user_id} (Edit Sub Admin / Password / WA 2FA / Role / Durasi)
+    - DELETE /api/auth/users/{user_id} (Nonaktifkan Sub Admin)
+
+- main.py
+  * Auto-migration SQLite untuk kolom `role` dan `session_expire_hours`.
+
+- templates/index.html
+  * Modal 'Akun & 2FA': Tambah Tab 'Manajemen Sub-Admin' (Khusus Super Admin).
+
+
+====================================================================
+Diperbarui pada: 24 Juli 2026
+Proyek: WA-CDM (C:\Users\andri\Documents\CDM-Project\WA-CDM\project.txt)
+====================================================================

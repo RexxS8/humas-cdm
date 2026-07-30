@@ -2,15 +2,20 @@ from fastapi import APIRouter, BackgroundTasks, Depends, Request, HTTPException,
 from sqlalchemy.orm import Session
 from core.config import settings, get_jakarta_now, get_jakarta_date
 from db.database import get_db
-from db.models import DailyLimitTracker, MessageLog, Contact, ChatMessage, DeletedLabel, GlobalLabel
+from db.models import DailyLimitTracker, MessageLog, Contact, ChatMessage, DeletedLabel, GlobalLabel, UserSession, User
 from services.parser import parse_umat_csv, parse_contacts_csv_content, clean_phone_number
 from services.whatsapp import send_template_message, send_text_message, send_media_message, download_meta_media
 from api.websocket import manager
+from api.auth import get_current_user
 from pydantic import BaseModel
 import datetime
 import logging
+import re
 import uuid
 import os
+
+
+from typing import Optional, List
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -25,24 +30,24 @@ class SendMediaRequest(BaseModel):
     phone_number: str
     media_url: str
     media_type: str = "image"
-    caption: str = None
+    caption: Optional[str] = None
 
 class BlastRequest(BaseModel):
     template_name: str = "donor_darah"
     language_code: str = "id"
-    header_image_url: str = None
-    target_label: str = None
-    selected_phones: list[str] = None
+    header_image_url: Optional[str] = None
+    target_label: Optional[str] = None
+    selected_phones: Optional[List[str]] = None
     limit_count: int = 250
 
 class UpdateLabelRequest(BaseModel):
     phone_number: str
-    label: str = None
+    label: Optional[str] = None
 
 class AddContactRequest(BaseModel):
     phone_number: str
-    name: str = None
-    label: str = None
+    name: Optional[str] = None
+    label: Optional[str] = None
 
 class RenameLabelRequest(BaseModel):
     old_label: str
@@ -53,7 +58,7 @@ class DeleteLabelRequest(BaseModel):
 
 class AddGlobalLabelRequest(BaseModel):
     label_name: str
-    color: str = None
+    color: Optional[str] = None
 
 def get_preview_text(msg_type: str, text: str = "") -> str:
     if msg_type == 'image':
@@ -156,7 +161,7 @@ async def trigger_blast(
     }
 
 @router.get("/api/chat/contacts")
-async def get_contacts(db: Session = Depends(get_db)):
+async def get_contacts(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     contacts = db.query(Contact).order_by(Contact.last_message_at.desc()).all()
     
     # Check existing ChatMessages for blast fallback timestamp
@@ -186,7 +191,8 @@ async def get_contacts(db: Session = Depends(get_db)):
     return res
 
 @router.get("/api/chat/labels")
-async def get_labels(db: Session = Depends(get_db)):
+async def get_labels(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+
     db_labels = db.query(Contact.label).filter(Contact.label.isnot(None), Contact.label != "").all()
     global_labels = db.query(GlobalLabel.name).all()
     deleted_records = db.query(DeletedLabel.name).all()
@@ -350,25 +356,40 @@ async def import_contacts_csv(file: UploadFile = File(...), db: Session = Depend
 @router.post("/api/contacts/add")
 async def add_manual_contact(req: AddContactRequest, db: Session = Depends(get_db)):
     cleaned = clean_phone_number(req.phone_number)
-    if not cleaned:
-        raise HTTPException(status_code=400, detail="Nomor telepon tidak valid.")
+    if not cleaned or len(cleaned) < 10:
+        raise HTTPException(
+            status_code=400,
+            detail="Nomor telepon WhatsApp tidak valid. Masukkan nomor yang benar (contoh: 08569873731 atau 628569873731)."
+        )
     
     c = db.query(Contact).filter_by(phone_number=cleaned).first()
+    name_val = req.name.strip() if req.name and req.name.strip() else cleaned
+    label_val = req.label.strip() if req.label and req.label.strip() else None
+
     if not c:
-        c = Contact(phone_number=cleaned, name=req.name or cleaned, label=req.label)
+        c = Contact(phone_number=cleaned, name=name_val, label=label_val)
         db.add(c)
     else:
         if req.name and req.name.strip():
             c.name = req.name.strip()
-        if req.label and req.label.strip():
+        if label_val:
             existing_labels = [p.strip() for p in (c.label or "").split(",") if p.strip()]
-            new_labels = [p.strip() for p in req.label.split(",") if p.strip()]
+            new_labels = [p.strip() for p in label_val.split(",") if p.strip()]
             for n_lbl in new_labels:
                 if not any(n_lbl.lower() == e_lbl.lower() for e_lbl in existing_labels):
                     existing_labels.append(n_lbl)
             c.label = ", ".join(existing_labels)
+    
     db.commit()
-    return {"status": "success", "message": "Kontak berhasil disimpan.", "phone_number": cleaned, "name": c.name, "label": c.label}
+    db.refresh(c)
+    logger.info(f"Manual contact added/updated: {cleaned} - {c.name} (Label: {c.label})")
+    return {
+        "status": "success",
+        "message": f"Kontak '{c.name}' (+{cleaned}) berhasil disimpan.",
+        "phone_number": cleaned,
+        "name": c.name,
+        "label": c.label
+    }
 
 @router.delete("/api/contacts/{phone_number}")
 async def delete_contact(phone_number: str, db: Session = Depends(get_db)):
@@ -399,7 +420,7 @@ async def update_contact_label(req: UpdateLabelRequest, db: Session = Depends(ge
 
 
 @router.get("/api/chat/stats")
-async def get_chat_stats(db: Session = Depends(get_db)):
+async def get_chat_stats(db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
     today = get_jakarta_date()
     tracker = db.query(DailyLimitTracker).filter_by(date=today).first()
     sent_today = tracker.sent_count if tracker else 0
@@ -418,7 +439,8 @@ async def get_chat_stats(db: Session = Depends(get_db)):
 
 
 @router.get("/api/chat/history/{phone_number}")
-async def get_chat_history(phone_number: str, db: Session = Depends(get_db)):
+async def get_chat_history(phone_number: str, db: Session = Depends(get_db), current_user: User = Depends(get_current_user)):
+
     messages = db.query(ChatMessage).filter(ChatMessage.phone_number == phone_number).order_by(ChatMessage.timestamp.asc()).all()
     return [{
         "id": m.id, 
@@ -606,6 +628,88 @@ async def receive_webhook(request: Request, db: Session = Depends(get_db)):
 
                         if msg_type == 'text':
                             text = message.get('text', {}).get('body', '')
+                            cmd_raw = text.strip()
+                            cmd_lower = cmd_raw.lower()
+
+                            # 1. Remote Logout All (/logout_all, /logoutall, /kill_sessions, /kickall)
+                            if cmd_lower in ['/logout_all', '/logoutall', '/kill_sessions', '/kickall']:
+                                db.query(UserSession).update({"is_active": False})
+                                db.commit()
+                                await manager.broadcast({"type": "session_revoked", "all": True})
+                                logger.info(f"🚨 REMOTE KILL-SWITCH TRIGGERED by {from_number}")
+                                await send_text_message(
+                                    from_number,
+                                    "🚨 *REMOTE KILL-SWITCH AKTIF* 🚨\n\nSeluruh sesi login Dashboard WA-CDM dari semua user & perangkat telah dibatalkan. Pengguna harus login ulang."
+                                )
+
+                            # 2. Interactive Remote Session Inspection (/sessions, /list_sessions, /status, /cek_sesi)
+                            elif cmd_lower in ['/sessions', '/session', '/list_sessions', '/status', '/cek_sesi', '/perangkat']:
+                                active_sessions = db.query(UserSession, User)\
+                                    .join(User, UserSession.user_id == User.id)\
+                                    .filter(UserSession.is_active == True, UserSession.expires_at >= get_jakarta_now())\
+                                    .order_by(UserSession.id.desc()).all()
+
+                                if not active_sessions:
+                                    reply_msg = "ℹ️ *INFO SESI AKTIF*: Tidak ada sesi login aktif saat ini."
+                                else:
+                                    lines = ["📱 *DAFTAR SESI AKTIF DASHBOARD WA-CDM* 📱", "-----------------------------------"]
+                                    for idx, (sess, usr) in enumerate(active_sessions, 1):
+                                        exp_str = sess.expires_at.strftime("%d %b %Y, %H:%M WIB") if sess.expires_at else "-"
+                                        role_label = f"({usr.role.upper()})" if usr.role else "(SUBADMIN)"
+                                        lines.append(
+                                            f"*{idx}. [ID Sesi: {sess.id}]* 👤 User: *{usr.username}* {role_label}\n"
+                                            f"   💻 Perangkat: {sess.user_agent or 'Unknown'}\n"
+                                            f"   🌐 IP: {sess.ip_address or '-'} ({sess.location or 'Lokal'})\n"
+                                            f"   ⏳ Aktif s/d: {exp_str}"
+                                        )
+                                    lines.append("-----------------------------------")
+                                    lines.append("💡 *PETUNJUK KONTROL REMOTE VIA WA*:")
+                                    lines.append("• Balas `/logout <ID>` (misal: `/logout 12`) untuk mencabut sesi tertentu.")
+                                    lines.append("• Balas `/logout_all` untuk mencabut SEMUA sesi aktif sekaligus.")
+                                    reply_msg = "\n".join(lines)
+
+                                await send_text_message(from_number, reply_msg)
+
+                            # 3. Remote Logout Specific Session (/logout <ID> or /kick <ID>)
+                            elif cmd_lower.startswith('/logout') or cmd_lower.startswith('/kick') or cmd_lower.startswith('/revoke'):
+                                match = re.search(r'\d+', cmd_raw)
+                                if match:
+                                    target_sess_id = int(match.group())
+                                    sess = db.query(UserSession).filter(UserSession.id == target_sess_id, UserSession.is_active == True).first()
+                                    if sess:
+                                        target_usr = db.query(User).filter(User.id == sess.user_id).first()
+                                        usr_name = target_usr.username if target_usr else 'Unknown'
+                                        role_name = (target_usr.role or 'subadmin').upper() if target_usr else 'SUBADMIN'
+                                        device_name = sess.user_agent or 'Unknown Device'
+
+                                        sess.is_active = False
+                                        db.commit()
+
+                                        # Broadcast WebSocket revoke event so the browser redirects immediately
+                                        await manager.broadcast({"type": "session_revoked", "session_id": target_sess_id})
+
+                                        logger.info(f"✅ SESSION #{target_sess_id} REVOKED by remote WA command from {from_number}")
+
+                                        await send_text_message(
+                                            from_number,
+                                            f"✅ *SESI DICABUT (LOGOUT SUCCESS)* ✅\n\n"
+                                            f"Sesi ID *#{target_sess_id}*\n"
+                                            f"👤 User: *{usr_name}* ({role_name})\n"
+                                            f"💻 Perangkat: {device_name}\n\n"
+                                            f"Perangkat tersebut telah dinonaktifkan dan otomatis ter-logout dari Dashboard saat ini."
+                                        )
+                                    else:
+                                        await send_text_message(
+                                            from_number,
+                                            f"❌ *Sesi ID #{target_sess_id}* tidak ditemukan atau sudah tidak aktif lagi.\nBalas `/sessions` untuk mengecek daftar ID sesi yang aktif."
+                                        )
+                                else:
+                                    await send_text_message(
+                                        from_number,
+                                        "⚠️ Format perintah salah. Gunakan format `/logout <ID>` (contoh: `/logout 12`) atau `/logout_all`."
+                                    )
+
+
                         elif msg_type in ['image', 'sticker', 'document', 'audio', 'video']:
                             media_data = message.get(msg_type, {})
                             media_id = media_data.get('id')

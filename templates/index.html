@@ -110,8 +110,29 @@
                 </svg>
                 Trigger Blast (Hari Ini: <span id="limit-text">0</span> chat)
             </button>
+
+            <!-- Account Settings & Logout Buttons -->
+            <button id="open-account-modal-btn" onclick="openAccountModal()"
+                class="bg-dark-700 hover:bg-dark-600 text-indigo-400 hover:text-indigo-300 px-3 py-1.5 rounded-lg transition-colors text-xs font-semibold flex items-center gap-1.5 border border-dark-600"
+                title="Pengaturan Akun, Password & Keamanan 2FA">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"></path>
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                </svg>
+                <span>Akun & 2FA</span>
+            </button>
+
+            <button onclick="handleDashboardLogout()"
+                class="bg-red-500/20 hover:bg-red-500/30 text-red-400 border border-red-500/30 px-3 py-1.5 rounded-lg transition-colors text-xs font-semibold flex items-center gap-1.5"
+                title="Keluar dari Dashboard">
+                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"></path>
+                </svg>
+                <span>Keluar</span>
+            </button>
         </div>
     </header>
+
 
     <div class="flex flex-grow overflow-hidden">
 
@@ -1333,7 +1354,7 @@
                 const row = document.createElement('tr');
                 row.className = 'hover:bg-dark-800/80 transition-colors border-b border-dark-700/60';
 
-                const time = c.last_message_at ? new Date(c.last_message_at + 'Z').toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
+                const time = c.last_message_at ? parseMsgDate(c.last_message_at).toLocaleString([], { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }) : '-';
                 const stackedBadges = renderStackedLabelBadges(c.label) || '<span class="text-gray-500 italic text-[11px]">No Label</span>';
                 const lastMsgText = c.last_message ? escapeHtml(c.last_message) : '-';
 
@@ -1413,38 +1434,67 @@
         });
 
         const closeAddContactModal = () => addContactModal.classList.add('hidden');
-        cancelAddContactModal.addEventListener('click', closeAddContactModal);
-        cancelAddContactBtn.addEventListener('click', closeAddContactModal);
+        if (cancelAddContactModal) cancelAddContactModal.addEventListener('click', closeAddContactModal);
+        if (cancelAddContactBtn) cancelAddContactBtn.addEventListener('click', closeAddContactModal);
 
-        saveManualContactBtn.addEventListener('click', async () => {
+        async function submitManualContactForm() {
             const name = manualContactName.value.trim();
             const rawPhone = manualContactPhone.value.trim();
             const label = manualContactLabelSelect.value || null;
 
             if (!rawPhone) {
                 alert("Nomor telepon WhatsApp wajib diisi.");
+                manualContactPhone.focus();
                 return;
             }
+
+            saveManualContactBtn.disabled = true;
+            saveManualContactBtn.textContent = 'Menyimpan...';
 
             try {
                 const res = await fetch('/api/contacts/add', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone_number: rawPhone, name, label })
+                    body: JSON.stringify({ phone_number: rawPhone, name: name, label: label })
                 });
                 const data = await res.json();
-                if (data.status === 'success') {
+                if (res.ok && data.status === 'success') {
                     closeAddContactModal();
-                    loadContacts();
-                    loadLabels();
+                    await loadContacts();
+                    await loadLabels();
                     openChat(data.phone_number, data.name, data.label);
                 } else {
-                    alert("Gagal menambahkan kontak: " + (data.detail || data.message));
+                    let errStr = data.detail || data.message;
+                    if (Array.isArray(errStr)) {
+                        errStr = errStr.map(item => item.msg || JSON.stringify(item)).join(", ");
+                    } else if (typeof errStr === 'object') {
+                        errStr = JSON.stringify(errStr);
+                    }
+                    alert("Gagal menambahkan kontak: " + (errStr || "Nomor telepon tidak valid."));
                 }
             } catch (err) {
-                alert("Terjadi kesalahan saat menyimpan kontak.");
+                alert("Terjadi kesalahan koneksi saat menyimpan kontak.");
+            } finally {
+                saveManualContactBtn.disabled = false;
+                saveManualContactBtn.textContent = 'Simpan Kontak';
             }
-        });
+        }
+
+        if (saveManualContactBtn) {
+            saveManualContactBtn.addEventListener('click', submitManualContactForm);
+        }
+
+        if (manualContactPhone) {
+            manualContactPhone.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') submitManualContactForm();
+            });
+        }
+        if (manualContactName) {
+            manualContactName.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') submitManualContactForm();
+            });
+        }
+
 
         // CSV Import Handlers
         openCsvModalBtn.addEventListener('click', () => {
@@ -1858,7 +1908,7 @@
                 el.className = `p-3 border-b border-dark-700 cursor-pointer hover:bg-dark-800 transition-colors flex items-center gap-3 contact-item group relative ${activeContact === contact.phone_number ? 'bg-dark-800' : ''}`;
                 el.dataset.phone = contact.phone_number;
 
-                const time = contact.last_message_at ? new Date(contact.last_message_at + 'Z').toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
+                const time = contact.last_message_at ? parseMsgDate(contact.last_message_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '';
                 const stackedBadgesHtml = renderStackedLabelBadges(contact.label);
                 const unreadCount = contact.unread_count || 0;
 
@@ -2125,9 +2175,18 @@
         function parseMsgDate(timestamp) {
             if (!timestamp) return new Date();
             if (timestamp instanceof Date) return timestamp;
-            const tsStr = String(timestamp);
-            const normalized = tsStr.endsWith('Z') || tsStr.includes('+') ? tsStr : tsStr + 'Z';
-            const d = new Date(normalized);
+            const tsStr = String(timestamp).trim();
+            if (!tsStr) return new Date();
+
+            // If timestamp explicitly contains timezone offset (e.g., ends with 'Z' or has +07:00)
+            if (tsStr.endsWith('Z') || (tsStr.includes('T') && tsStr.includes('+'))) {
+                const d = new Date(tsStr);
+                return isNaN(d.getTime()) ? new Date() : d;
+            }
+
+            // Naive local timestamp from server (WIB UTC+7, e.g., "2026-07-25 01:37:47" or "2026-07-25T01:37:47")
+            const cleanIso = tsStr.replace(' ', 'T');
+            const d = new Date(cleanIso);
             return isNaN(d.getTime()) ? new Date() : d;
         }
 
@@ -2342,6 +2401,16 @@
 
         chatSendBtn.addEventListener('click', sendMessage);
 
+        // Global HTTP 401 Unauthorized Interceptor for Immediate Logout
+        const originalFetch = window.fetch;
+        window.fetch = async function(...args) {
+            const res = await originalFetch.apply(this, args);
+            if (res.status === 401 && !window.location.pathname.includes('/login') && !window.location.pathname.includes('/2fa')) {
+                window.location.href = '/login';
+            }
+            return res;
+        };
+
         // WebSocket Integration
         const wsProtocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
         const ws = new WebSocket(`${wsProtocol}//${window.location.host}/ws/dashboard`);
@@ -2380,14 +2449,516 @@
                     }
                 }
                 loadStats();
+            } else if (data.type === 'session_revoked') {
+                // Immediate session check when revoked remotely via WhatsApp
+                fetch('/api/auth/me').then(res => {
+                    if (res.status === 401) {
+                        window.location.href = '/login';
+                    }
+                });
             }
         };
+
 
         // Initial Load
         renderTemplateOptions();
         loadLabels();
         loadContacts();
         loadStats();
+    </script>
+
+    <!-- Modal Pengaturan Akun, Password & Keamanan 2FA -->
+    <div id="account-modal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center z-50 p-4">
+        <div class="bg-dark-800 border border-dark-700 w-full max-w-lg rounded-2xl p-6 shadow-2xl relative max-h-[90vh] overflow-y-auto">
+            <button onclick="closeAccountModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h2 class="text-xl font-bold text-white mb-1 flex items-center gap-2">
+                <svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z"></path></svg>
+                Pengaturan Akun & Keamanan
+            </h2>
+            <p class="text-xs text-gray-400 mb-5">Kelola username, password, nomor WhatsApp 2FA, dan sesi aktif.</p>
+
+            <div id="account-alert" class="hidden p-3 rounded-lg text-xs font-medium mb-4"></div>
+
+            <!-- Tab Buttons -->
+            <div class="flex border-b border-dark-700 mb-4 gap-2">
+                <button id="tab-profile-btn" onclick="switchAccountTab('profile')" class="px-4 py-2 text-xs font-bold text-indigo-400 border-b-2 border-indigo-400">Profil & Password</button>
+                <button id="tab-sessions-btn" onclick="switchAccountTab('sessions')" class="px-4 py-2 text-xs font-bold text-gray-400 hover:text-gray-200">Sesi Aktif</button>
+                <button id="tab-subadmin-btn" onclick="switchAccountTab('subadmin')" class="px-4 py-2 text-xs font-bold text-gray-400 hover:text-gray-200 hidden">Manajemen Sub-Admin</button>
+            </div>
+
+            <!-- Tab 1: Profile & Password -->
+            <div id="tab-profile-content">
+                <form onsubmit="handleSaveAccountProfile(event)" class="space-y-4">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Username Saat Ini</label>
+                        <input id="acc-username" type="text" class="w-full bg-dark-900 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500" placeholder="Username baru">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-300 mb-1">Nomor WhatsApp 2FA OTP (Contoh: 628569873731)</label>
+                        <input id="acc-wanumber" type="text" class="w-full bg-dark-900 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500" placeholder="628569873731">
+                    </div>
+                    <div id="change-password-section">
+                        <hr class="border-dark-700 my-2">
+                        <p class="text-xs font-bold text-amber-400">Ganti Password (Opsional)</p>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-300 mb-1">Password Baru</label>
+                            <input id="acc-newpassword" type="password" class="w-full bg-dark-900 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500" placeholder="Kosongkan jika tidak ingin diganti">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-semibold text-gray-300 mb-1">Password Saat Ini (Wajib Konfirmasi)</label>
+                            <input id="acc-currpassword" type="password" class="w-full bg-dark-900 border border-dark-700 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-indigo-500" placeholder="Masukkan password saat ini">
+                        </div>
+                    </div>
+
+
+                    <div class="pt-2">
+                        <button type="submit" class="w-full bg-indigo-600 hover:bg-indigo-700 text-white py-2.5 rounded-lg text-xs font-bold transition shadow-lg">
+                            Simpan Perubahan
+                        </button>
+                    </div>
+
+                </form>
+            </div>
+
+            <!-- Tab 2: Sessions List -->
+            <div id="tab-sessions-content" class="hidden space-y-3">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs text-gray-400">Daftar perangkat yang sedang terhubung</span>
+                    <button onclick="revokeAllSessions()" class="text-xs text-red-400 hover:underline font-semibold">
+                        Logout Semua Perangkat
+                    </button>
+                </div>
+                <div id="sessions-list-container" class="space-y-2 max-h-60 overflow-y-auto pr-1">
+                    <p class="text-xs text-gray-500 text-center py-4">Memuat daftar sesi...</p>
+                </div>
+            </div>
+
+            <!-- Tab 3: Sub-Admin Management (Super Admin Only) -->
+            <div id="tab-subadmin-content" class="hidden space-y-3">
+                <div class="flex justify-between items-center mb-2">
+                    <span class="text-xs text-gray-400">Kelola Akun Admin & Sub-Admin Sistem</span>
+                    <button onclick="openAddSubAdminModal()" class="bg-indigo-600 hover:bg-indigo-700 text-white px-3 py-1.5 rounded-lg text-xs font-bold transition flex items-center gap-1">
+                        <span>+ Tambah Sub Admin</span>
+                    </button>
+                </div>
+                <div id="subadmin-list-container" class="space-y-2 max-h-64 overflow-y-auto pr-1">
+                    <p class="text-xs text-gray-500 text-center py-4">Memuat daftar pengguna...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Form Tambah / Edit Sub Admin -->
+    <div id="subadmin-form-modal" class="fixed inset-0 bg-black/80 backdrop-blur-sm hidden items-center justify-center z-[60] p-4">
+        <div class="bg-dark-800 border border-dark-700 w-full max-w-md rounded-2xl p-6 shadow-2xl relative">
+            <button onclick="closeSubAdminFormModal()" class="absolute top-4 right-4 text-gray-400 hover:text-white">
+                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+            </button>
+            <h3 id="subadmin-form-title" class="text-lg font-bold text-white mb-4">Tambah Sub-Admin Baru</h3>
+            <form onsubmit="handleSaveSubAdmin(event)" class="space-y-3 text-xs">
+                <input type="hidden" id="subadmin-edit-id" value="">
+                <div>
+                    <label class="block font-semibold text-gray-300 mb-1">Username</label>
+                    <input id="subadmin-input-username" type="text" required class="w-full bg-dark-900 border border-dark-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500" placeholder="Username sub-admin">
+                </div>
+                <div>
+                    <label class="block font-semibold text-gray-300 mb-1">Password</label>
+                    <input id="subadmin-input-password" type="password" class="w-full bg-dark-900 border border-dark-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500" placeholder="Password (min 6 digit)">
+                </div>
+                <div>
+                    <label class="block font-semibold text-gray-300 mb-1">Nomor WhatsApp 2FA OTP</label>
+                    <input id="subadmin-input-wa" type="text" class="w-full bg-dark-900 border border-dark-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500" placeholder="6281234567890">
+                </div>
+                <div>
+                    <label class="block font-semibold text-gray-300 mb-1">Role / Peran</label>
+                    <select id="subadmin-input-role" class="w-full bg-dark-900 border border-dark-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+                        <option value="subadmin">Sub Admin</option>
+                        <option value="superadmin">Super Admin</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block font-semibold text-gray-300 mb-1">Durasi Akses Sesi Login (Expired Token)</label>
+                    <select id="subadmin-input-expire" class="w-full bg-dark-900 border border-dark-700 rounded-lg px-3 py-2 text-white focus:outline-none focus:border-indigo-500">
+                        <option value="8">8 Jam (Jam Kerja Standard)</option>
+                        <option value="12">12 Jam</option>
+                        <option value="24" selected>24 Jam (1 Hari - Default)</option>
+                        <option value="48">48 Jam (2 Hari)</option>
+                        <option value="168">168 Jam (7 Hari)</option>
+                    </select>
+                </div>
+
+                <div class="flex justify-end gap-2 pt-3">
+                    <button type="button" onclick="closeSubAdminFormModal()" class="px-4 py-2 bg-dark-700 text-gray-300 rounded-lg font-semibold">Batal</button>
+                    <button type="submit" class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg font-bold">Simpan User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+
+    <script>
+        let currentUserRole = 'subadmin';
+
+        function openAccountModal() {
+            document.getElementById('account-modal').classList.remove('hidden');
+            document.getElementById('account-modal').classList.add('flex');
+            loadAccountInfo();
+        }
+
+        function closeAccountModal() {
+            document.getElementById('account-modal').classList.add('hidden');
+            document.getElementById('account-modal').classList.remove('flex');
+        }
+
+        function switchAccountTab(tab) {
+            const profileBtn = document.getElementById('tab-profile-btn');
+            const sessionsBtn = document.getElementById('tab-sessions-btn');
+            const subadminBtn = document.getElementById('tab-subadmin-btn');
+
+            const profileContent = document.getElementById('tab-profile-content');
+            const sessionsContent = document.getElementById('tab-sessions-content');
+            const subadminContent = document.getElementById('tab-subadmin-content');
+
+            // Reset tab styles
+            profileBtn.className = 'px-4 py-2 text-xs font-bold text-gray-400 hover:text-gray-200';
+            sessionsBtn.className = 'px-4 py-2 text-xs font-bold text-gray-400 hover:text-gray-200';
+            subadminBtn.className = subadminBtn.className.replace('text-indigo-400 border-b-2 border-indigo-400', 'text-gray-400 hover:text-gray-200');
+
+            profileContent.classList.add('hidden');
+            sessionsContent.classList.add('hidden');
+            subadminContent.classList.add('hidden');
+
+            if (tab === 'profile') {
+                profileBtn.className = 'px-4 py-2 text-xs font-bold text-indigo-400 border-b-2 border-indigo-400';
+                profileContent.classList.remove('hidden');
+            } else if (tab === 'sessions') {
+                sessionsBtn.className = 'px-4 py-2 text-xs font-bold text-indigo-400 border-b-2 border-indigo-400';
+                sessionsContent.classList.remove('hidden');
+                loadActiveSessions();
+            } else if (tab === 'subadmin') {
+                subadminBtn.className = 'px-4 py-2 text-xs font-bold text-indigo-400 border-b-2 border-indigo-400';
+                subadminContent.classList.remove('hidden');
+                loadSubAdmins();
+            }
+        }
+
+        async function loadAccountInfo() {
+            try {
+                const res = await fetch('/api/auth/me');
+                if (res.ok) {
+                    const data = await res.json();
+                    document.getElementById('acc-username').value = data.username || '';
+                    document.getElementById('acc-wanumber').value = data.wa_number || '';
+                    currentUserRole = data.role || 'subadmin';
+
+                    const subadminBtn = document.getElementById('tab-subadmin-btn');
+                    const changePwdSection = document.getElementById('change-password-section');
+                    const currPwdInput = document.getElementById('acc-currpassword');
+
+                    if (currentUserRole === 'superadmin') {
+                        subadminBtn.classList.remove('hidden');
+                        if (changePwdSection) changePwdSection.classList.remove('hidden');
+                        if (currPwdInput) currPwdInput.required = true;
+                    } else {
+                        subadminBtn.classList.add('hidden');
+                        if (changePwdSection) changePwdSection.classList.add('hidden');
+                        if (currPwdInput) currPwdInput.required = false;
+                    }
+
+                }
+            } catch (err) {}
+        }
+
+        async function handleSaveAccountProfile(e) {
+            e.preventDefault();
+            const alertEl = document.getElementById('account-alert');
+            alertEl.classList.add('hidden');
+
+            const new_username = document.getElementById('acc-username').value.trim();
+            const wa_number = document.getElementById('acc-wanumber').value.trim();
+            const new_password = document.getElementById('acc-newpassword').value;
+            const current_password = document.getElementById('acc-currpassword').value;
+
+            try {
+                const res = await fetch('/api/auth/update-profile', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        new_username,
+                        wa_number,
+                        new_password,
+                        current_password
+                    })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    alertEl.className = 'p-3 rounded-lg text-xs font-medium mb-4 bg-emerald-500/20 text-emerald-300 border border-emerald-500/30';
+                    alertEl.textContent = data.message;
+                    alertEl.classList.remove('hidden');
+                    document.getElementById('acc-currpassword').value = '';
+                    document.getElementById('acc-newpassword').value = '';
+                } else {
+                    alertEl.className = 'p-3 rounded-lg text-xs font-medium mb-4 bg-red-500/20 text-red-300 border border-red-500/30';
+                    alertEl.textContent = data.detail || 'Gagal memperbarui profil';
+                    alertEl.classList.remove('hidden');
+                }
+            } catch (err) {
+                alertEl.className = 'p-3 rounded-lg text-xs font-medium mb-4 bg-red-500/20 text-red-300 border border-red-500/30';
+                alertEl.textContent = 'Terjadi kesalahan sistem';
+                alertEl.classList.remove('hidden');
+            }
+        }
+
+        async function loadActiveSessions() {
+            const container = document.getElementById('sessions-list-container');
+            try {
+                const res = await fetch('/api/auth/sessions');
+                if (res.ok) {
+                    const data = await res.json();
+                    if (!data.sessions || data.sessions.length === 0) {
+                        container.innerHTML = '<p class="text-xs text-gray-500 text-center py-4">Tidak ada sesi aktif lain.</p>';
+                        return;
+                    }
+                    let html = '';
+                    data.sessions.forEach(s => {
+                        html += `
+                        <div class="bg-dark-900 p-3 rounded-lg border border-dark-700 flex justify-between items-center text-xs">
+                            <div>
+                                <p class="font-bold text-white">${s.user_agent}</p>
+                                <p class="text-gray-400">🌐 ${s.ip_address} (${s.location})</p>
+                                <p class="text-gray-500 text-[10px]">Aktif s/d: ${s.expires_at}</p>
+                            </div>
+                            <button onclick="revokeSession(${s.id})" class="bg-red-500/20 text-red-400 hover:bg-red-500/40 px-2.5 py-1 rounded transition text-[11px]">
+                                Kick Out
+                            </button>
+                        </div>`;
+                    });
+                    container.innerHTML = html;
+                }
+            } catch (err) {
+                container.innerHTML = '<p class="text-xs text-red-400 text-center py-4">Gagal memuat sesi.</p>';
+            }
+        }
+
+        async function revokeSession(id) {
+            if (!confirm('Cabut akses sesi ini? Browser terkait akan ter-logout.')) return;
+            try {
+                const res = await fetch('/api/auth/sessions/revoke', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ session_id: id })
+                });
+                if (res.ok) {
+                    loadActiveSessions();
+                }
+            } catch (err) {}
+        }
+
+        async function revokeAllSessions() {
+            if (!confirm('Peringatan: Keluarkan seluruh sesi login dari semua perangkat?')) return;
+            try {
+                const res = await fetch('/api/auth/sessions/revoke-all', { method: 'POST' });
+                if (res.ok) {
+                    window.location.href = '/login';
+                }
+            } catch (err) {}
+        }
+
+        // Sub-Admin Management Methods
+        let cachedUsersList = [];
+
+        async function loadSubAdmins() {
+            const container = document.getElementById('subadmin-list-container');
+            try {
+                const res = await fetch('/api/auth/users');
+                if (res.ok) {
+                    const data = await res.json();
+                    cachedUsersList = data.users || [];
+                    if (cachedUsersList.length === 0) {
+                        container.innerHTML = '<p class="text-xs text-gray-500 text-center py-4">Belum ada akun sub-admin.</p>';
+                        return;
+                    }
+                    let html = '';
+                    cachedUsersList.forEach(u => {
+                        const isSuper = u.role === 'superadmin';
+                        const badgeColor = isSuper ? 'bg-amber-500/20 text-amber-300 border-amber-500/30' : 'bg-sky-500/20 text-sky-300 border-sky-500/30';
+                        const statusBadge = u.is_active
+                            ? '<span class="text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/20">● Aktif</span>'
+                            : '<span class="text-red-400 font-bold bg-red-500/10 px-2 py-0.5 rounded border border-red-500/20">○ Nonaktif</span>';
+                        
+                        const totpBadge = u.totp_enabled
+                            ? '<span class="text-emerald-300 font-medium">🔐 TOTP Authenticator: Aktif</span>'
+                            : '<span class="text-gray-400">🔐 TOTP: Belum Setup</span>';
+
+                        html += `
+                        <div class="bg-dark-900 p-3 rounded-lg border border-dark-700 flex justify-between items-center text-xs flex-wrap gap-2">
+                            <div>
+                                <div class="flex items-center gap-2 flex-wrap mb-1">
+                                    <span class="font-bold text-white text-sm">${u.username}</span>
+                                    <span class="px-2 py-0.5 text-[10px] rounded border font-semibold ${badgeColor}">${u.role.toUpperCase()}</span>
+                                    ${statusBadge}
+                                </div>
+                                <p class="text-gray-400 text-[11px]">📱 WA 2FA: <strong>${u.wa_number}</strong> | ⏱️ Durasi Sesi: <strong>${u.session_expire_hours} Jam</strong> | ${totpBadge}</p>
+                            </div>
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <button onclick="openEditSubAdminModal(${u.id})" class="bg-dark-700 hover:bg-dark-600 text-sky-400 px-2.5 py-1 rounded border border-dark-600 font-semibold text-[11px]">
+                                    Edit
+                                </button>
+                                ${!isSuper ? `
+                                <button onclick="toggleSubAdminActive(${u.id}, ${!u.is_active}, '${u.username}')" class="${u.is_active ? 'bg-amber-500/20 hover:bg-amber-500/40 text-amber-300 border border-amber-500/30' : 'bg-emerald-500/20 hover:bg-emerald-500/40 text-emerald-300 border border-emerald-500/30'} px-2 py-1 rounded text-[11px] font-semibold">
+                                    ${u.is_active ? 'Nonaktifkan' : 'Aktifkan'}
+                                </button>
+                                <button onclick="deleteSubAdminPermanently(${u.id}, '${u.username}')" class="bg-red-500/20 hover:bg-red-500/40 text-red-400 border border-red-500/30 px-2 py-1 rounded text-[11px] font-semibold" title="Hapus Permanen Akun Ini">
+                                    🗑️ Hapus
+                                </button>` : ''}
+                            </div>
+                        </div>`;
+                    });
+                    container.innerHTML = html;
+                } else {
+                    container.innerHTML = '<p class="text-xs text-red-400 text-center py-4">Akses khusus Super Admin.</p>';
+                }
+            } catch (err) {
+                container.innerHTML = '<p class="text-xs text-red-400 text-center py-4">Gagal memuat daftar sub-admin.</p>';
+            }
+        }
+
+        function openAddSubAdminModal() {
+            document.getElementById('subadmin-edit-id').value = '';
+            document.getElementById('subadmin-form-title').textContent = 'Tambah Sub-Admin Baru';
+            document.getElementById('subadmin-input-username').value = '';
+            document.getElementById('subadmin-input-username').disabled = false;
+            document.getElementById('subadmin-input-password').value = '';
+            document.getElementById('subadmin-input-password').required = true;
+            document.getElementById('subadmin-input-wa').value = '628569873731';
+            document.getElementById('subadmin-input-role').value = 'subadmin';
+            document.getElementById('subadmin-input-expire').value = '24';
+
+            document.getElementById('subadmin-form-modal').classList.remove('hidden');
+            document.getElementById('subadmin-form-modal').classList.add('flex');
+        }
+
+        function openEditSubAdminModal(id) {
+            const user = cachedUsersList.find(u => u.id === id);
+            if (!user) return;
+
+            document.getElementById('subadmin-edit-id').value = user.id;
+            document.getElementById('subadmin-form-title').textContent = `Edit Akun: ${user.username}`;
+            document.getElementById('subadmin-input-username').value = user.username;
+            document.getElementById('subadmin-input-username').disabled = true;
+            document.getElementById('subadmin-input-password').value = '';
+            document.getElementById('subadmin-input-password').required = false;
+            document.getElementById('subadmin-input-wa').value = user.wa_number || '';
+            document.getElementById('subadmin-input-role').value = user.role || 'subadmin';
+            document.getElementById('subadmin-input-expire').value = user.session_expire_hours || 24;
+
+            document.getElementById('subadmin-form-modal').classList.remove('hidden');
+            document.getElementById('subadmin-form-modal').classList.add('flex');
+        }
+
+        function closeSubAdminFormModal() {
+            document.getElementById('subadmin-form-modal').classList.add('hidden');
+            document.getElementById('subadmin-form-modal').classList.remove('flex');
+        }
+
+        async function handleSaveSubAdmin(e) {
+            e.preventDefault();
+            const editId = document.getElementById('subadmin-edit-id').value;
+            const username = document.getElementById('subadmin-input-username').value.trim();
+            const password = document.getElementById('subadmin-input-password').value;
+            const wa_number = document.getElementById('subadmin-input-wa').value.trim();
+            const role = document.getElementById('subadmin-input-role').value;
+            const session_expire_hours = parseInt(document.getElementById('subadmin-input-expire').value);
+
+            try {
+                let res;
+                if (editId) {
+                    // Update existing
+                    res = await fetch(`/api/auth/users/${editId}`, {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            password: password || undefined,
+                            wa_number,
+                            role,
+                            session_expire_hours
+                        })
+                    });
+                } else {
+                    // Create new
+                    res = await fetch('/api/auth/users', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            username,
+                            password,
+                            wa_number,
+                            role,
+                            session_expire_hours
+                        })
+                    });
+                }
+
+                const data = await res.json();
+                if (res.ok) {
+                    closeSubAdminFormModal();
+                    loadSubAdmins();
+                } else {
+                    alert(data.detail || 'Gagal menyimpan user');
+                }
+            } catch (err) {
+                alert('Terjadi kesalahan sistem');
+            }
+        }
+
+        async function toggleSubAdminActive(id, newActiveStatus, username) {
+            const actionText = newActiveStatus ? 'mengaktifkan' : 'menonaktifkan';
+            if (!confirm(`Apakah Anda yakin ingin ${actionText} akun sub-admin '${username}'?`)) return;
+
+            try {
+                const res = await fetch(`/api/auth/users/${id}`, {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ is_active: newActiveStatus })
+                });
+                const data = await res.json();
+                if (res.ok) {
+                    loadSubAdmins();
+                } else {
+                    alert(data.detail || `Gagal ${actionText} akun`);
+                }
+            } catch (err) {
+                alert('Terjadi kesalahan sistem');
+            }
+        }
+
+        async function deleteSubAdminPermanently(id, username) {
+            if (!confirm(`PERINGATAN: Apakah Anda yakin ingin MENGHAPUS PERMANEN akun sub-admin '${username}'?\n\nAkun ini akan dihapus total dari database.`)) return;
+
+            try {
+                const res = await fetch(`/api/auth/users/${id}?permanent=true`, { method: 'DELETE' });
+                const data = await res.json();
+                if (res.ok) {
+                    alert(data.message || `Akun '${username}' berhasil dihapus secara permanen.`);
+                    loadSubAdmins();
+                } else {
+                    alert(data.detail || 'Gagal menghapus akun');
+                }
+            } catch (err) {
+                alert('Terjadi kesalahan sistem');
+            }
+        }
+
+
+        async function handleDashboardLogout() {
+            try {
+                await fetch('/api/auth/logout', { method: 'POST' });
+            } catch (err) {}
+            window.location.href = '/login';
+        }
+
     </script>
 </body>
 

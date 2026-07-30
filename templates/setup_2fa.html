@@ -1,0 +1,154 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Setup Google Authenticator - WA-CDM</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Outfit', sans-serif; }
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            color: #fff;
+        }
+        .card {
+            width: 100%; max-width: 480px;
+            background: rgba(30, 41, 59, 0.8);
+            backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 36px;
+            text-align: center;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+        }
+        .qr-box {
+            background: #fff;
+            padding: 16px;
+            border-radius: 16px;
+            display: inline-block;
+            margin: 20px 0;
+        }
+        .qr-box img { width: 180px; height: 180px; }
+        .secret-code {
+            background: rgba(15, 23, 42, 0.8);
+            padding: 10px 16px;
+            border-radius: 10px;
+            font-family: monospace;
+            font-size: 16px;
+            color: #38bdf8;
+            letter-spacing: 2px;
+            margin-bottom: 20px;
+            display: inline-block;
+        }
+        .input-code {
+            width: 100%;
+            padding: 14px;
+            background: rgba(15, 23, 42, 0.8);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            border-radius: 12px;
+            color: #fff;
+            font-size: 18px;
+            text-align: center;
+            letter-spacing: 4px;
+            outline: none;
+            margin-bottom: 16px;
+        }
+        .btn {
+            width: 100%; padding: 14px;
+            background: linear-gradient(135deg, #6366f1 0%, #4f46e5 100%);
+            border: none; border-radius: 12px;
+            color: #fff; font-size: 16px; font-weight: 600;
+            cursor: pointer; transition: all 0.3s;
+        }
+        .btn:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(99, 102, 241, 0.4); }
+        .back-btn { display: inline-block; margin-top: 16px; color: #94a3b8; text-decoration: none; font-size: 13px; }
+        .alert { display: none; padding: 10px; border-radius: 8px; font-size: 13px; margin-bottom: 12px; }
+        .alert-error { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+        .alert-success { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2><i class="fa-solid fa-qrcode"></i> Setup Google Authenticator</h2>
+        <p style="color: #94a3b8; font-size: 14px; margin-top: 8px;">
+            Scan QR Code ini menggunakan aplikasi <strong>Google Authenticator</strong> di HP Anda.
+        </p>
+
+        <div id="alertBox" class="alert"></div>
+
+        <div class="qr-box">
+            <img id="qrImg" src="" alt="QR Code 2FA Loading...">
+        </div>
+
+        <div>
+            <p style="font-size: 12px; color: #64748b; margin-bottom: 4px;">Kunci Rahasia Manual:</p>
+            <div id="secretKey" class="secret-code">LOADING...</div>
+        </div>
+
+        <form onsubmit="enableTOTP(event)">
+            <input type="text" id="testCode" class="input-code" placeholder="6-Digit Kode TOTP" maxlength="6" pattern="[0-9]{6}" required>
+            <button type="submit" class="btn">Aktifkan Google Authenticator</button>
+        </form>
+
+        <a href="/" class="back-btn"><i class="fa-solid fa-arrow-left"></i> Kembali ke Dashboard</a>
+    </div>
+
+    <script>
+        let currentSecret = '';
+
+        async function loadQR() {
+            try {
+                const res = await fetch('/api/auth/setup-2fa');
+                if (!res.ok) {
+                    window.location.href = '/login';
+                    return;
+                }
+                const data = await res.json();
+                document.getElementById('qrImg').src = data.qr_code_base64;
+                document.getElementById('secretKey').textContent = data.secret;
+                currentSecret = data.secret;
+            } catch (err) {
+                alert('Gagal memuat QR Code');
+            }
+        }
+
+        async function enableTOTP(e) {
+            e.preventDefault();
+            const code = document.getElementById('testCode').value.trim();
+            const alertBox = document.getElementById('alertBox');
+
+            try {
+                const res = await fetch('/api/auth/setup-2fa/enable', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ secret: currentSecret, code: code })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    alertBox.className = 'alert alert-success';
+                    alertBox.textContent = 'Berhasil! Google Authenticator telah aktif pada akun Anda.';
+                    alertBox.style.display = 'block';
+                    setTimeout(() => window.location.href = '/', 1500);
+                } else {
+                    alertBox.className = 'alert alert-error';
+                    alertBox.textContent = data.detail || 'Kode tidak valid.';
+                    alertBox.style.display = 'block';
+                }
+            } catch (err) {
+                alertBox.className = 'alert alert-error';
+                alertBox.textContent = 'Gagal memproses ke server.';
+                alertBox.style.display = 'block';
+            }
+        }
+
+        loadQR();
+    </script>
+</body>
+</html>

@@ -1,0 +1,316 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Login - WA-CDM Omnichannel</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Outfit', -apple-system, BlinkMacSystemFont, sans-serif;
+        }
+
+        body {
+            min-height: 100vh;
+            background: linear-gradient(135deg, #0f172a 0%, #1e1b4b 50%, #0f172a 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            overflow-x: hidden;
+            position: relative;
+        }
+
+        /* Ambient Glowing Background Orbs */
+        .orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(80px);
+            opacity: 0.5;
+            z-index: 0;
+            animation: float 10s infinite ease-in-out alternate;
+        }
+        .orb-1 {
+            width: 350px;
+            height: 350px;
+            background: #4f46e5;
+            top: 10%;
+            left: 15%;
+        }
+        .orb-2 {
+            width: 300px;
+            height: 300px;
+            background: #06b6d4;
+            bottom: 10%;
+            right: 15%;
+            animation-delay: -5s;
+        }
+
+        @keyframes float {
+            0% { transform: translate(0, 0) scale(1); }
+            100% { transform: translate(30px, 30px) scale(1.1); }
+        }
+
+        .login-card {
+            position: relative;
+            z-index: 10;
+            width: 100%;
+            max-width: 440px;
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
+            animation: fadeIn 0.6s ease-out;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .brand-header {
+            text-align: center;
+            margin-bottom: 32px;
+        }
+
+        .brand-logo {
+            width: 64px;
+            height: 64px;
+            border-radius: 16px;
+            margin-bottom: 16px;
+            box-shadow: 0 8px 16px rgba(79, 70, 229, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            object-fit: cover;
+        }
+
+        .brand-title {
+            color: #ffffff;
+            font-size: 24px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
+        }
+
+        .brand-subtitle {
+            color: #94a3b8;
+            font-size: 14px;
+            font-weight: 400;
+        }
+
+        .form-group {
+            margin-bottom: 22px;
+            position: relative;
+        }
+
+        .form-label {
+            display: block;
+            color: #cbd5e1;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 8px;
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-icon {
+            position: absolute;
+            left: 16px;
+            color: #64748b;
+            font-size: 16px;
+            transition: color 0.3s;
+        }
+
+        .form-input {
+            width: 100%;
+            padding: 14px 16px 14px 44px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 15px;
+            outline: none;
+            transition: all 0.3s ease;
+        }
+
+        .form-input:focus {
+            border-color: #6366f1;
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.2);
+            background: rgba(15, 23, 42, 0.8);
+        }
+
+        .form-input:focus + .input-icon, .input-wrapper:focus-within .input-icon {
+            color: #818cf8;
+        }
+
+        .alert-box {
+            display: none;
+            padding: 12px 16px;
+            border-radius: 12px;
+            font-size: 13px;
+            margin-bottom: 20px;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .alert-error {
+            background: rgba(239, 68, 68, 0.15);
+            border: 1px solid rgba(239, 68, 68, 0.3);
+            color: #fca5a5;
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
+            border: none;
+            border-radius: 12px;
+            color: #ffffff;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 10px 20px -5px rgba(79, 70, 229, 0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+        }
+
+        .btn-submit:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 15px 25px -5px rgba(79, 70, 229, 0.6);
+        }
+
+        .btn-submit:active {
+            transform: translateY(0);
+        }
+
+        .btn-submit:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .spinner {
+            width: 20px;
+            height: 20px;
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-top-color: #ffffff;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            display: none;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .footer-note {
+            text-align: center;
+            margin-top: 24px;
+            color: #64748b;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="orb orb-1"></div>
+    <div class="orb orb-2"></div>
+
+    <div class="login-card">
+        <div class="brand-header">
+            <img src="/static/Profile-Pic.png" alt="Logo" class="brand-logo" onerror="this.src='https://via.placeholder.com/64'">
+            <h1 class="brand-title">WA-CDM Omnichannel</h1>
+            <p class="brand-subtitle">Masuk ke Dashboard Sistem Navigasi Umat</p>
+        </div>
+
+        <div id="alertBox" class="alert-box alert-error">
+            <i class="fa-solid fa-circle-exclamation"></i>
+            <span id="alertMessage">Username atau password salah</span>
+        </div>
+
+        <form id="loginForm" onsubmit="handleLogin(event)">
+            <div class="form-group">
+                <label class="form-label" for="username">Username</label>
+                <div class="input-wrapper">
+                    <input type="text" id="username" class="form-input" placeholder="Masukkan username" required autocomplete="username">
+                    <i class="fa-solid fa-user input-icon"></i>
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label class="form-label" for="password">Password</label>
+                <div class="input-wrapper">
+                    <input type="password" id="password" class="form-input" placeholder="Masukkan password" required autocomplete="current-password">
+                    <i class="fa-solid fa-lock input-icon"></i>
+                </div>
+            </div>
+
+            <button type="submit" id="btnSubmit" class="btn-submit">
+                <span>Lanjut ke Verifikasi 2FA</span>
+                <i class="fa-solid fa-arrow-right"></i>
+                <div id="spinner" class="spinner"></div>
+            </button>
+        </form>
+
+        <div class="footer-note">
+            WA-CDM Omnichannel &copy; 2026. Autentikasi 2 Lapis Dilindungi.
+        </div>
+    </div>
+
+    <script>
+        async function handleLogin(e) {
+            e.preventDefault();
+            const alertBox = document.getElementById('alertBox');
+            const alertMessage = document.getElementById('alertMessage');
+            const btnSubmit = document.getElementById('btnSubmit');
+            const spinner = document.getElementById('spinner');
+
+            alertBox.style.display = 'none';
+            btnSubmit.disabled = true;
+            spinner.style.display = 'block';
+
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+
+            try {
+                const response = await fetch('/api/auth/login', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ username, password })
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.status === '2fa_required') {
+                    // Save temporary token & redirect to 2FA page
+                    sessionStorage.setItem('pre_2fa_token', data.pre_2fa_token);
+                    sessionStorage.setItem('2fa_message', data.message);
+                    sessionStorage.setItem('totp_enabled', data.totp_enabled);
+                    window.location.href = '/2fa';
+                } else {
+                    alertMessage.textContent = data.detail || 'Gagal login. Periksa username & password.';
+                    alertBox.style.display = 'flex';
+                }
+            } catch (err) {
+                alertMessage.textContent = 'Terjadi kesalahan koneksi ke server.';
+                alertBox.style.display = 'flex';
+            } finally {
+                btnSubmit.disabled = false;
+                spinner.style.display = 'none';
+            }
+        }
+    </script>
+</body>
+</html>

@@ -17,8 +17,18 @@ class Settings(BaseSettings):
     WEBHOOK_VERIFY_TOKEN: str = "your_webhook_verify_token"
     DATABASE_URL: str = "sqlite:///./whatsapp.db"
 
+    # Security & 2FA Configuration
+    SECRET_KEY: str = "wacdm-secret-key-super-secure-change-in-env-2026"
+    ALGORITHM: str = "HS256"
+    ADMIN_USERNAME: str = "admin"
+    ADMIN_PASSWORD: str = "admin123"
+    ADMIN_WA_NUMBER: str = "628569873731"
+    SESSION_EXPIRE_HOURS: int = 24
+    OTP_EXPIRE_MINUTES: int = 5
+
     class Config:
         env_file = ".env"
+        extra = "ignore"
 
 settings = Settings()
 

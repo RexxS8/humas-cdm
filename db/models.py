@@ -57,6 +57,44 @@ class GlobalLabel(Base):
     name = Column(String, unique=True, index=True)
     color = Column(String, nullable=True)
 
+class User(Base):
+    __tablename__ = "users"
+
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String, unique=True, index=True, nullable=False)
+    hashed_password = Column(String, nullable=False)
+    totp_secret = Column(String, nullable=True)
+    wa_number = Column(String, nullable=True)
+    email = Column(String, nullable=True)
+    role = Column(String, default="superadmin")  # "superadmin" or "subadmin"
+    session_expire_hours = Column(Integer, default=24)  # Session lifetime in hours
+    is_active = Column(Boolean, default=True)
+    created_at = Column(DateTime, default=get_jakarta_now)
+
+class UserSession(Base):
+    __tablename__ = "user_sessions"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True, nullable=False)
+    session_token = Column(String, unique=True, index=True, nullable=False)
+    ip_address = Column(String, nullable=True)
+    user_agent = Column(String, nullable=True)
+    location = Column(String, nullable=True)
+    is_active = Column(Boolean, default=True)
+    expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, default=get_jakarta_now)
+
+class OTPCode(Base):
+    __tablename__ = "otp_codes"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, index=True, nullable=False)
+    code = Column(String, nullable=False)
+    purpose = Column(String, default="login_2fa")
+    is_used = Column(Boolean, default=False)
+    expires_at = Column(DateTime, nullable=False)
+    created_at = Column(DateTime, default=get_jakarta_now)
+
 
 
 
